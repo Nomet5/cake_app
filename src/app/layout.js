@@ -1,14 +1,14 @@
 import { Roboto, Inter } from "next/font/google";
-import "./globals.css";
-import "./reset.css";
+import './globals.css';
+
 
 const robotoSans = Roboto({
-  variable: "--font-geist-sans",
+  variable: "--font-roboto-sans",
   subsets: ["latin"],
 });
 
 const interMono = Inter({
-  variable: "--font-geist-mono",
+  variable: "--font-inter-mono",
   subsets: ["latin"],
 });
 

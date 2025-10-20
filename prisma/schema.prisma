@@ -14,685 +14,260 @@ datasource db {
   url      = env("DATABASE_URL") // URL базы данных берется из переменной окружения DATABASE_URL
 }
 
-// ==================== ПЕРЕЧИСЛЕНИЯ (ENUMS) ====================
-// Перечисления определяют фиксированные наборы значений для полей
+// ==================== ОСНОВНЫЕ МОДЕЛИ ДЛЯ MVP ====================
 
-// Юридический статус повара - для налоговой отчетности и проверок
-enum LegalStatus {
-  INDIVIDUAL     // ИП - индивидуальный предприниматель
-  SELF_EMPLOYED  // Самозанятый - упрощенная налоговая система
-  LLC            // ООО - общество с ограниченной ответственностью
-  INDIVIDUAL_PERSON // Физлицо - без регистрации бизнеса
-}
-
-// Статусы заказа - отслеживание жизненного цикла заказа
-enum OrderStatus {
-  PENDING    // Ожидает подтверждения - только что создан
-  CONFIRMED  // Подтвержден - повар принял заказ
-  PREPARING  // Готовится - на кухне начали приготовление
-  READY      // Готов к выдаче - можно забирать/доставлять
-  DELIVERED  // Доставлен - передан клиенту
-  CANCELLED  // Отменен - до начала приготовления
-}
-
-// Статусы оплаты - управление финансовыми операциями
-enum PaymentStatus {
-  PENDING  // Ожидает оплаты - создан но не оплачен
-  PAID     // Оплачен - деньги получены
-  FAILED   // Ошибка оплаты - транзакция не прошла
-  REFUNDED // Возвращен - деньги возвращены клиенту
-}
-
-// Способы оплаты - поддержка разных платежных методов
-enum PaymentMethod {
-  CARD          // Карта - онлайн оплата
-  CASH          // Наличные - при получении
-  ONLINE        // Онлайн - электронные кошельки
-  BANK_TRANSFER // Банковский перевод - для юр. лиц
-}
-
-// Типы скидок - различные механики промоакций
-enum DiscountType {
-  PERCENTAGE   // Процентная скидка - "20% скидка"
-  FIXED        // Фиксированная сумма - "100 рублей скидки"
-  FREE_DELIVERY // Бесплатная доставка - акция на доставку
-}
-
-// Типы уведомлений - категоризация уведомлений для пользователей
-enum NotificationType {
-  ORDER_UPDATE // Обновление заказа - смена статуса заказа
-  PROMOTION    // Акция - новые скидки и предложения
-  SYSTEM       // Системное - технические уведомления
-  CHEF_NEWS    // Новости от повара - новые блюда, обновления
-}
-
-// Статусы доставки - отслеживание процесса доставки
-enum DeliveryStatus {
-  PENDING    // Ожидает - заказ готов к доставке
-  ASSIGNED   // Назначен - курьер принял заказ
-  PICKED_UP  // Забран - курьер забрал заказ у повара
-  ON_THE_WAY // В пути - курьер едет к клиенту
-  DELIVERED  // Доставлен - передан клиенту
-  FAILED     // Не удалось - проблемы с доставкой
-}
-
-// Уровни лояльности - система поощрения постоянных клиентов
-enum LoyaltyLevel {
-  BRONZE   // Бронза - базовый уровень
-  SILVER   // Серебро - средние расходы
-  GOLD     // Золото - высокие расходы
-  PLATINUM // Платина - VIP клиенты
-}
-
-// Платформы для уведомлений - таргетирование push-уведомлений
-enum Platform {
-  IOS     // iOS - iPhone и iPad
-  ANDROID // Android - телефоны и планшеты
-  WEB     // Web - браузерные уведомления
-}
-
-// Статусы модерации - контроль пользовательского контента
-enum ModerationStatus {
-  PENDING  // На модерации - ожидает проверки
-  APPROVED // Одобрено - прошло модерацию
-  REJECTED // Отклонено - нарушает правила
-}
-
-// ==================== ОСНОВНЫЕ МОДЕЛИ ====================
-
-model Notification {
-  id        Int           @id @default(autoincrement())
-  userId    Int
-  title     String
-  message   String
-  type      NotificationType
-  deviceToken String?
-  platform    Platform?
-  sentAt     DateTime?
-  deliveredAt DateTime?
-  isRead    Boolean       @default(false)
-  metadata  String?
+model User {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  firstName     String
+  passwordHash  String
+  phone         String?
   
-  user      User          @relation(fields: [userId], references: [id])
-  createdAt DateTime      @default(now())
+  // Связи
+  addresses     Address[]
+  chefProfile   Chef?
+  orders        Order[]
+  cartItems     CartItem[]
+  sessions      UserSession[]
+  reviews     Review[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  @@map("notifications")
-  @@index([userId, isRead])
-  @@index([createdAt])
-  @@index([type])
+  @@map("users")
 }
 
+model Address {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  addressLine1 String
+  city         String
+  country      String   @default("Russia")
+  isPrimary    Boolean  @default(false)
+  
+  user         User     @relation(fields: [userId], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@map("user_addresses")
+}
+
+model Chef {
+  id           Int       @id @default(autoincrement())
+  userId       Int       @unique
+  businessName String
+  description  String?
+  isActive     Boolean   @default(true)
+  isVerified   Boolean   @default(false)
+  
+  user         User      @relation(fields: [userId], references: [id])
+  products     Product[]
+  orders       Order[]
+  
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  promotions  Promotion[]
+  reviews     Review[]
+
+  @@map("chefs")
+}
+
+model Category {
+  id          Int       @id @default(autoincrement())
+  name        String
+  isActive    Boolean   @default(true)
+  
+  products    Product[]
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  @@map("categories")
+}
+
+model Product {
+  id           Int       @id @default(autoincrement())
+  chefId       Int
+  categoryId   Int?
+  name         String
+  description  String?
+  price        Float
+  isAvailable  Boolean   @default(true)
+  
+  chef         Chef      @relation(fields: [chefId], references: [id])
+  category     Category? @relation(fields: [categoryId], references: [id])
+  images       ProductImage[]
+  orderItems   OrderItem[]
+  cartItems    CartItem[]
+  reviews     Review[]
+  
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("products")
+  @@index([chefId, isAvailable])
+}
+
+model ProductImage {
+  id         Int      @id @default(autoincrement())
+  productId  Int
+  imageUrl   String
+  isPrimary  Boolean  @default(false)
+  
+  product    Product  @relation(fields: [productId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@map("product_images")
+}
 
 model CartItem {
-  id                  Int      @id @default(autoincrement())
-  userId              Int
-  productId           Int
-  quantity            Int      @default(1)
-  specialInstructions String?
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  productId Int
+  quantity  Int      @default(1)
   
-  user                User     @relation(fields: [userId], references: [id])
-  product             Product  @relation(fields: [productId], references: [id])
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+  product   Product  @relation(fields: [productId], references: [id])
+  createdAt DateTime @default(now())
 
   @@unique([userId, productId])
   @@map("cart_items")
-  @@index([userId])
 }
 
-
-// Основная модель пользователя - клиенты и повара
-model User {
-  id              Int       @id @default(autoincrement()) // Уникальный идентификатор, автоинкремент
-  email           String    @unique // Электронная почта, должна быть уникальной
-  phone           String?   // Номер телефона, необязательное поле
-  firstName       String    // Имя пользователя, обязательное поле
-  lastName        String?   // Фамилия пользователя, необязательное поле
-  avatarUrl       String?   // Ссылка на аватар пользователя
-  dateOfBirth     DateTime? // Дата рождения пользователя
-  passwordHash    String    // Хеш пароля пользователя
-  emailVerified   Boolean   @default(false) // Подтвержден ли email, по умолчанию false
-  phoneVerified   Boolean   @default(false) // Подтвержден ли телефон, по умолчанию false
-  
-  // Мягкое удаление - позволяет восстанавливать пользователей
-  deletedAt       DateTime? // Дата удаления пользователя
-  isDeleted       Boolean   @default(false) // Флаг удаления, по умолчанию false
-  
-  // Связи с другими моделями
-  addresses       Address[] // Список адресов пользователя
-  chefProfile     Chef?     // Профиль повара (если пользователь является поваром)
-  orders          Order[]   // Заказы пользователя
-  reviews         Review[]  // Отзывы пользователя
-  favoriteChefs   FavoriteChef[] // Избранные повара
-  favoriteProducts FavoriteProduct[] // Избранные продукты
-  cartItems       CartItem[] // Элементы корзины
-  notifications   Notification[] // Уведомления пользователя
-  sessions        UserSession[] // Сессии пользователя
-  loyaltyProgram  LoyaltyProgram? // Программа лояльности
-  auditLogs       AuditLog[] // Логи действий пользователя
-  
-  createdAt       DateTime  @default(now()) // Дата создания, автоматически устанавливается при создании
-  updatedAt       DateTime  @updatedAt // Дата обновления, автоматически обновляется при изменении
-
-  @@map("users") // Название таблицы в базе данных будет "users"
-  @@index([email]) // Создание индекса для поля email для быстрого поиска
-  @@index([createdAt]) // Индекс для поля createdAt для аналитики регистраций
-  @@index([isDeleted]) // Индекс для фильтрации удаленных пользователей
-}
-
-// Адреса пользователей - для доставки и геолокации
-model Address {
-  id           Int     @id @default(autoincrement()) // Уникальный идентификатор адреса
-  userId       Int // ID пользователя, владельца адреса
-  addressLine1 String // Первая строка адреса (улица, дом)
-  addressLine2 String? // Вторая строка адреса (квартира, этаж)
-  city         String // Город
-  postalCode   String? // Почтовый индекс
-  country      String  @default("Russia") // Страна, по умолчанию Россия
-  latitude     Float? // Географическая широта
-  longitude    Float? // Географическая долгота
-  isPrimary    Boolean @default(false) // Является ли адрес основным
-  
-  user         User    @relation(fields: [userId], references: [id]) // Связь с пользователем
-  createdAt    DateTime @default(now()) // Дата создания адреса
-
-  @@map("user_addresses") // Название таблицы в БД
-  @@index([userId, isPrimary]) // Составной индекс для поиска основного адреса пользователя
-  @@index([latitude, longitude]) // Индекс для геопоиска по координатам
-}
-
-model ChefHoliday {
-  id           Int      @id @default(autoincrement())
-  chefId       Int
-  holidayDate  DateTime
-  reason       String?
-  chef         Chef     @relation(fields: [chefId], references: [id])
-  createdAt    DateTime @default(now())
-  @@map("chef_holidays")
-  @@index([chefId, holidayDate])
-}
-
-// Акции и скидки - маркетинговые кампании поваров
-model Promotion {
-  id               Int             @id @default(autoincrement()) // Уникальный идентификатор акции
-  chefId           Int             // ID повара, создавшего акцию
-  title            String          // Заголовок акции (например, "Скидка 20% на все торты")
-  description      String?         // Подробное описание акции
-  discountType     DiscountType    // Тип скидки (процентная, фиксированная, бесплатная доставка)
-  discountValue    Float?          // Значение скидки (например, 20 для 20% или 100 для 100 рублей)
-  minOrderAmount   Float?          // Минимальная сумма заказа для применения акции
-  startDate        DateTime        // Дата начала действия акции
-  endDate          DateTime        // Дата окончания действия акции
-  isActive         Boolean         @default(true) // Активна ли акция в данный момент
-  
-  chef             Chef            @relation(fields: [chefId], references: [id]) // Связь с поваром
-  createdAt        DateTime        @default(now()) // Дата создания акции
-
-  @@map("promotions") // Название таблицы в базе данных будет "promotions"
-  @@index([chefId, isActive]) // Составной индекс для поиска активных акций конкретного повара
-  @@index([startDate, endDate]) // Индекс для проверки актуальности акции по датам
-  @@index([isActive]) // Индекс для фильтрации только активных акций
-}
-
-// Профиль повара - расширенные данные для продавцов
-model Chef {
-  id              Int       @id @default(autoincrement()) // Уникальный ID повара
-  userId          Int       @unique // ID пользователя, уникальная связь 1:1
-  businessName    String // Название бизнеса/кухни
-  description     String? // Описание деятельности повара
-  specialty       String[]  // Массив специализаций ['кондитер', 'пекарь', 'кулинар']
-  experienceYears Int? // Опыт работы в годах
-  rating          Float?    @default(0.0) // Рейтинг повара, по умолчанию 0.0
-  totalReviews    Int       @default(0) // Общее количество отзывов
-  isVerified      Boolean   @default(false) // Верифицирован ли повар платформой
-  isActive        Boolean   @default(true) // Активен ли повар
-  legalStatus     LegalStatus? // Юридический статус из enum
-  taxId           String? // Налоговый номер
-  instagramUrl    String? // Ссылка на Instagram
-  
-  // Мягкое удаление
-  deletedAt       DateTime? // Дата удаления профиля повара
-  isDeleted       Boolean   @default(false) // Флаг удаления
-  
-  // Связи
-  user            User      @relation(fields: [userId], references: [id]) // Связь с пользователем
-  kitchens        Kitchen[] // Кухни повара
-  products        Product[] // Товары повара
-  orders          Order[] // Заказы у этого повара
-  reviews         Review[] // Отзывы на повара
-  schedules       ChefSchedule[] // Расписание работы
-  holidays        ChefHoliday[] // Выходные дни
-  promotions      Promotion[] // Акции и скидки
-  deliveryZones   DeliveryZone[] // Зоны доставки
-  
-  createdAt       DateTime  @default(now()) // Дата создания профиля
-  updatedAt       DateTime  @updatedAt // Дата обновления
-
-  @@map("chefs") // Название таблицы в БД
-  @@index([rating]) // Индекс для сортировки по рейтингу
-  @@index([isVerified, isActive]) // Составной индекс для поиска активных верифицированных поваров
-  @@index([createdAt]) // Индекс для новых поваров
-}
-
-// Кухни/точки приготовления - физические локации поваров
-model Kitchen {
-  id                   Int      @id @default(autoincrement()) // Уникальный ID кухни
-  chefId               Int // ID повара-владельца
-  name                 String // Название кухни
-  address              String // Адрес кухни
-  city                 String // Город
-  latitude             Float? // Широта расположения
-  longitude            Float? // Долгота расположения
-  hasCertification     Boolean  @default(false) // Наличие сертификации
-  certificationNumber  String? // Номер сертификата
-  isActive             Boolean  @default(true) // Активна ли кухня
-  
-  chef                 Chef     @relation(fields: [chefId], references: [id]) // Связь с поваром
-  createdAt            DateTime @default(now()) // Дата создания
-
-  @@map("kitchens") // Название таблицы в БД
-  @@index([chefId, isActive]) // Индекс для поиска активных кухонь повара
-  @@index([latitude, longitude]) // Индекс для поиска по местоположению
-}
-
-// Категории товаров - организация меню и навигации
-model Category {
-  id          Int        @id @default(autoincrement()) // Уникальный ID категории
-  name        String // Название категории
-  description String? // Описание категории
-  imageUrl    String? // Ссылка на изображение категории
-  parentId    Int? // ID родительской категории (для древовидной структуры)
-  
-  // Рекурсивная связь - древовидная структура категорий
-  parent      Category?  @relation("CategoryToCategory", fields: [parentId], references: [id]) // Родительская категория
-  children    Category[] @relation("CategoryToCategory") // Дочерние категории
-  
-  products    Product[] // Товары в этой категории
-  translations CategoryTranslation[] // Переводы категории
-  sortOrder   Int        @default(0) // Порядок сортировки
-  isActive    Boolean    @default(true) // Активна ли категория
-  
-  // Мягкое удаление
-  deletedAt   DateTime? // Дата удаления категории
-  isDeleted   Boolean    @default(false) // Флаг удаления
-  
-  createdAt   DateTime   @default(now()) // Дата создания
-
-  @@map("categories") // Название таблицы в БД
-  @@index([parentId]) // Индекс для построения дерева категорий
-  @@index([sortOrder]) // Индекс для сортировки в пользовательском интерфейсе
-}
-
-// Товары/блюда - основная продаваемая продукция
-model Product {
-  id                     Int          @id @default(autoincrement()) // Уникальный ID товара
-  chefId                 Int // ID повара-создателя
-  categoryId             Int? // ID категории товара
-  name                   String // Название товара
-  description            String? // Описание товара
-  ingredients            String? // Ингредиенты
-  allergens              String[]     // Массив аллергенов ['орехи', 'молоко', 'глютен']
-  
-  // Поля для денежных расчетов
-  price                  Float        // Цена товара
-  originalPrice          Float?       // Исходная цена (для акций)
-  
-  weightGrams            Int? // Вес в граммах
-  shelfLifeDays          Int? // Срок годности в днях
-  preparationTimeMinutes Int? // Время приготовления в минутах
-  calories               Int? // Калорийность
-  isAvailable            Boolean      @default(true) // Доступен ли для заказа
-  isFeatured             Boolean      @default(false) // Рекомендуемый товар
-  maxQuantityPerOrder    Int? // Максимальное количество в одном заказе
-  totalOrders            Int          @default(0) // Общее количество заказов
-  
-  // Мягкое удаление
-  deletedAt              DateTime? // Дата удаления товара
-  isDeleted              Boolean      @default(false) // Флаг удаления
-  
-  // Связи
-  chef                   Chef         @relation(fields: [chefId], references: [id]) // Связь с поваром
-  category               Category?    @relation(fields: [categoryId], references: [id]) // Связь с категорией
-  images                 ProductImage[] // Изображения товара
-  orderItems             OrderItem[] // Позиции в заказах
-  reviews                Review[] // Отзывы на товар
-  favorites              FavoriteProduct[] // В избранном у пользователей
-  cartItems              CartItem[] // В корзинах пользователей
-  inventory              Inventory? // Остатки товара
-  translations           ProductTranslation[] // Переводы товара
-  views                  ProductView[] // Просмотры товара
-  
-  createdAt              DateTime     @default(now()) // Дата создания
-  updatedAt              DateTime     @updatedAt // Дата обновления
-
-  @@map("products") // Название таблицы в БД
-  @@index([chefId, isAvailable]) // Индекс для поиска доступных товаров повара
-  @@index([price]) // Индекс для фильтрации по цене
-  @@index([categoryId]) // Индекс для поиска по категориям
-  @@index([createdAt]) // Индекс для новых товаров
-  @@index([isFeatured]) // Индекс для рекомендованных товаров
-}
-
-// Изображения товаров - медиа-контент для привлечения клиентов
-model ProductImage {
-  id         Int     @id @default(autoincrement()) // Уникальный ID изображения
-  productId  Int // ID товара
-  imageUrl   String // Ссылка на изображение
-  sortOrder  Int     @default(0) // Порядок сортировки изображений
-  isPrimary  Boolean @default(false) // Является ли основным изображением
-  
-  product    Product @relation(fields: [productId], references: [id]) // Связь с товаром
-  createdAt  DateTime @default(now()) // Дата добавления
-
-  @@map("product_images") // Название таблицы в БД
-  @@index([productId, sortOrder]) // Индекс для порядка изображений товара
-}
-
-// Заказы - основная бизнес-сущность
 model Order {
-  id                     Int           @id @default(autoincrement()) // Уникальный ID заказа
+  id              Int           @id @default(autoincrement())
+  orderNumber     String        @unique @default(uuid())
+  userId          Int
+  chefId          Int
+  status          OrderStatus   @default(PENDING)
   
-  // Автогенерируемый номер заказа - уникальный идентификатор
-  orderNumber            String        @unique @default(uuid()) // Уникальный номер заказа, генерируется автоматически
+  totalAmount     Float
+  subtotal        Float
+  deliveryFee     Float
+  deliveryAddress String
+  paymentStatus   PaymentStatus @default(PENDING)
+  paymentMethod   PaymentMethod?
   
-  userId                 Int // ID пользователя, сделавшего заказ
-  chefId                 Int // ID повара
-  status                 OrderStatus   @default(PENDING) // Статус заказа из enum
+  user            User          @relation(fields: [userId], references: [id])
+  chef            Chef          @relation(fields: [chefId], references: [id])
+  items           OrderItem[]
+  delivery        Delivery?
+  reviews     Review[]
   
-  // Финансовые поля - детализация стоимости
-  totalAmount            Float        // Общая сумма заказа
-  subtotal               Float         // Сумма без доставки
-  deliveryFee            Float         // Стоимость доставки
-  taxAmount              Float         // Налоги
-  
-  // Программа лояльности - система поощрений
-  pointsEarned           Int           @default(0) // Начисленные баллы
-  pointsUsed             Int           @default(0) // Списаные баллы
-  
-  deliveryAddress        String // Адрес доставки
-  deliveryInstructions   String? // Инструкции по доставке
-  preferredDeliveryTime  DateTime? // Предпочтительное время доставки
-  actualDeliveryTime     DateTime? // Фактическое время доставки
-  paymentStatus          PaymentStatus @default(PENDING) // Статус оплаты
-  paymentMethod          PaymentMethod? // Способ оплаты
-  customerNotes          String? // Заметки клиента
-  chefNotes              String? // Заметки повара
-  
-  // Отмена и возвраты - управление отменами
-  cancelledAt            DateTime? // Дата отмены заказа
-  cancelReason           String? // Причина отмены
-  refundAmount           Float?        // Сумма возврата
-  
-  // Связи
-  user                   User          @relation(fields: [userId], references: [id]) // Связь с пользователем
-  chef                   Chef          @relation(fields: [chefId], references: [id]) // Связь с поваром
-  items                  OrderItem[] // Состав заказа
-  review                 Review? // Отзыв на заказ
-  delivery               Delivery? // Информация о доставке
-  
-  createdAt              DateTime      @default(now()) // Дата создания заказа
-  updatedAt              DateTime      @updatedAt // Дата обновления
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
-  @@map("orders") // Название таблицы в БД
-  @@index([userId, status]) // Индекс для заказов пользователя по статусу
-  @@index([chefId, status]) // Индекс для заказов повара по статусу
-  @@index([createdAt]) // Индекс для аналитики по дате создания
-  @@index([status]) // Индекс для фильтрации по статусу
-  @@index([orderNumber]) // Индекс для поиска по номеру заказа
+  @@map("orders")
+  @@index([userId, status])
+  @@index([chefId, status])
 }
 
-// Элементы заказа - состав заказа с детализацией
 model OrderItem {
-  id                  Int     @id @default(autoincrement()) // Уникальный ID элемента заказа
-  orderId             Int // ID заказа
-  productId           Int // ID товара
-  quantity            Int     @default(1) // Количество товара, по умолчанию 1
-  unitPrice           Float   // Цена за единицу на момент заказа
-  totalPrice          Float   // Общая цена (количество * цена за единицу)
-  specialInstructions String? // Особые инструкции к товару
+  id         Int     @id @default(autoincrement())
+  orderId    Int
+  productId  Int
+  quantity   Int     @default(1)
+  unitPrice  Float
+  totalPrice Float
   
-  order               Order   @relation(fields: [orderId], references: [id]) // Связь с заказом
-  product             Product @relation(fields: [productId], references: [id]) // Связь с товаром
-  createdAt           DateTime @default(now()) // Дата создания
+  order      Order   @relation(fields: [orderId], references: [id])
+  product    Product @relation(fields: [productId], references: [id])
+  createdAt  DateTime @default(now())
 
-  @@map("order_items") // Название таблицы в БД
-  @@index([orderId]) // Индекс для поиска состава заказа
-  @@index([productId]) // Индекс для аналитики популярности товаров
+  @@map("order_items")
 }
 
-// Отзывы и рейтинги - система репутации и обратной связи
-model Review {
-  id          Int      @id @default(autoincrement()) // Уникальный ID отзыва
-  orderId     Int      @unique // ID заказа, уникальная связь 1:1
-  userId      Int // ID пользователя, автора отзыва
-  chefId      Int // ID повара
-  productId   Int? // ID товара (если отзыв на конкретный товар)
-  rating      Int      // Оценка от 1 до 5
-  comment     String? // Текст отзыва
-  isApproved  Boolean  @default(true) // Одобрен ли отзыв
-  
-  // Модерация контента - контроль пользовательского контента
-  moderatedAt  DateTime? // Дата модерации
-  moderatedBy  Int? // ID модератора
-  moderationStatus ModerationStatus @default(PENDING) // Статус модерации
-  rejectionReason String? // Причина отклонения
-  
-  order       Order    @relation(fields: [orderId], references: [id]) // Связь с заказом
-  user        User     @relation(fields: [userId], references: [id]) // Связь с пользователем
-  chef        Chef     @relation(fields: [chefId], references: [id]) // Связь с поваром
-  product     Product? @relation(fields: [productId], references: [id]) // Связь с товаром
-  moderator   User?    @relation(fields: [moderatedBy], references: [id]) // Связь с модератором
-  
-  createdAt   DateTime @default(now()) // Дата создания отзыва
-
-  @@map("reviews") // Название таблицы в БД
-  @@index([chefId, rating]) // Индекс для рейтинга поваров
-  @@index([productId, rating]) // Индекс для рейтинга товаров
-  @@index([moderationStatus]) // Индекс для модерации отзывов
-}
-
-// ==================== НОВЫЕ МОДЕЛИ ====================
-
-// Управление остатками - предотвращение overselling
-model Inventory {
-  id          Int      @id @default(autoincrement()) // Уникальный ID записи об остатках
-  productId   Int      @unique // ID товара, уникальная связь 1:1
-  quantity    Int      @default(0) // Доступное количество товара
-  reserved    Int      @default(0) // Зарезервировано в активных заказах
-  lowStockThreshold Int @default(5) // Порог низкого запаса для уведомлений
-  
-  product     Product  @relation(fields: [productId], references: [id]) // Связь с товаром
-  updatedAt   DateTime @updatedAt // Дата обновления остатков
-
-  @@map("inventory") // Название таблицы в БД
-  @@index([quantity]) // Индекс для поиска товаров с низким запасом
-}
-
-// Система доставки - управление процессом доставки
 model Delivery {
-  id          Int       @id @default(autoincrement()) // Уникальный ID доставки
-  orderId     Int       @unique // ID заказа, уникальная связь 1:1
-  deliveryPersonId Int? // ID курьера
-  status      DeliveryStatus @default(PENDING) // Статус доставки
-  estimatedTime DateTime? // Расчетное время доставки
-  actualTime   DateTime? // Фактическое время доставки
-  trackingUrl  String? // URL для отслеживания доставки
+  id          Int           @id @default(autoincrement())
+  orderId     Int           @unique
+  status      DeliveryStatus @default(PENDING)
+  estimatedTime DateTime?
   
-  order       Order     @relation(fields: [orderId], references: [id]) // Связь с заказом
-  deliveryPerson User?  @relation(fields: [deliveryPersonId], references: [id]) // Связь с курьером
+  order       Order         @relation(fields: [orderId], references: [id])
 
-  @@map("deliveries") // Название таблицы в БД
-  @@index([deliveryPersonId]) // Индекс для загрузки курьеров
-  @@index([status]) // Индекс для управления доставками по статусу
+  @@map("deliveries")
 }
 
-// Аналитика просмотров - трекинг поведения пользователей
-model ProductView {
-  id        Int      @id @default(autoincrement()) // Уникальный ID просмотра
-  productId Int // ID просмотренного товара
-  userId    Int? // ID пользователя (null для анонимных просмотров)
-  ipAddress String? // IP-адрес для аналитики
-  viewedAt  DateTime @default(now()) // Время просмотра
+model Promotion {
+  id            Int           @id @default(autoincrement())
+  chefId        Int
+  title         String
+  discountType  DiscountType
+  discountValue Float?
+  startDate     DateTime
+  endDate       DateTime
+  isActive      Boolean       @default(true)
   
-  product   Product  @relation(fields: [productId], references: [id]) // Связь с товаром
-  user      User?    @relation(fields: [userId], references: [id]) // Связь с пользователем
+  chef          Chef          @relation(fields: [chefId], references: [id])
+  createdAt     DateTime      @default(now())
 
-  @@index([productId, viewedAt]) // Индекс для аналитики популярности товаров во времени
-  @@index([userId]) // Индекс для персонализации рекомендаций
-  @@map("product_views") // Название таблицы в БД
+  @@map("promotions")
 }
 
-// Система лояльности - поощрение постоянных клиентов
-model LoyaltyProgram {
-  id        Int     @id @default(autoincrement()) // Уникальный ID программы лояльности
-  userId    Int     @unique // ID пользователя, уникальная связь 1:1
-  points    Int     @default(0) // Количество баллов
-  level     LoyaltyLevel @default(BRONZE) // Уровень лояльности
+model Review {
+  id        Int      @id @default(autoincrement())
+  orderId   Int      @unique
+  userId    Int
+  chefId    Int
+  rating    Int
+  comment   String?
+  isApproved Boolean @default(true)
+  productId Int? 
   
-  user      User    @relation(fields: [userId], references: [id]) // Связь с пользователем
+  order     Order    @relation(fields: [orderId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+  chef      Chef     @relation(fields: [chefId], references: [id])
+  product   Product? @relation(fields: [productId], references: [id])
+  createdAt DateTime @default(now())
 
-  @@map("loyalty_program") // Название таблицы в БД
-  @@index([level]) // Индекс для сегментации клиентов по уровням
-  @@index([points]) // Индекс для поиска по количеству баллов
+  @@map("reviews")
 }
 
-// Зоны доставки - географическое ограничение доставки
-model DeliveryZone {
-  id          Int      @id @default(autoincrement()) // Уникальный ID зоны доставки
-  chefId      Int // ID повара
-  name        String // Название зоны доставки
-  polygon    Json // Координаты полигона зоны в формате JSON
-  deliveryFee Float // Стоимость доставки в этой зоне
-  minOrder    Float? // Минимальная сумма заказа для доставки
-  estimatedTime String // Оценочное время доставки "30-45 минут"
-  
-  chef        Chef     @relation(fields: [chefId], references: [id]) // Связь с поваром
-
-  @@map("delivery_zones") // Название таблицы в БД
-  @@index([chefId]) // Индекс для поиска зон доставки повара
-}
-
-// Многоязычность - поддержка интернационализации
-model ProductTranslation {
-  id          Int      @id @default(autoincrement()) // Уникальный ID перевода
-  productId   Int // ID товара
-  language    String   @default("ru") // Язык перевода (ru, en, etc.)
-  name        String // Название товара на указанном языке
-  description String? // Описание товара на указанном языке
-  
-  product     Product  @relation(fields: [productId], references: [id]) // Связь с товаром
-
-  @@unique([productId, language]) // Уникальная комбинация товара и языка
-  @@map("product_translations") // Название таблицы в БД
-}
-
-// Переводы категорий
-model CategoryTranslation {
-  id          Int      @id @default(autoincrement()) // Уникальный ID перевода категории
-  categoryId  Int // ID категории
-  language    String   @default("ru") // Язык перевода
-  name        String // Название категории на указанном языке
-  description String? // Описание категории на указанном языке
-  
-  category    Category @relation(fields: [categoryId], references: [id]) // Связь с категорией
-
-  @@unique([categoryId, language]) // Уникальная комбинация категории и языка
-  @@map("category_translations") // Название таблицы в БД
-}
-
-// Логирование действий - аудит и безопасность
-model AuditLog {
-  id        Int       @id @default(autoincrement()) // Уникальный ID записи лога
-  userId    Int? // ID пользователя, совершившего действие
-  action    String // Тип действия (create, update, delete, etc.)
-  entity    String // Сущность (User, Order, Product, etc.)
-  entityId  Int? // ID сущности, над которой совершено действие
-  oldValues Json? // Старые значения в формате JSON
-  newValues Json? // Новые значения в формате JSON
-  ipAddress String? // IP-адрес, с которого совершено действие
-  userAgent String? // User-Agent браузера/приложения
-  createdAt DateTime  @default(now()) // Время создания записи лога
-  
-  user      User?     @relation(fields: [userId], references: [id]) // Связь с пользователем
-
-  @@index([entity, entityId]) // Индекс для поиска действий по сущности
-  @@index([createdAt]) // Индекс для фильтрации по времени
-  @@index([action]) // Индекс для фильтрации по типу действия
-  @@map("audit_logs") // Название таблицы в БД
-}
-
-// Управление сессиями - безопасность и multi-device
 model UserSession {
-  id        Int      @id @default(autoincrement()) // Уникальный ID сессии
-  userId    Int // ID пользователя
-  token     String   @unique // Уникальный токен сессии
-  expiresAt DateTime // Время истечения сессии
-  ipAddress String? // IP-адрес входа
-  userAgent String? // User-Agent устройства
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  token     String   @unique
+  expiresAt DateTime
   
-  user      User     @relation(fields: [userId], references: [id]) // Связь с пользователем
+  user      User     @relation(fields: [userId], references: [id])
 
-  @@index([expiresAt]) // Индекс для очистки просроченных сессий
-  @@index([userId]) // Индекс для управления сессиями пользователя
-  @@map("user_sessions") // Название таблицы в БД
+  @@map("user_sessions")
 }
 
-// Архив заказов - хранение исторических данных
-model OrderArchive {
-  id        Int      @id @default(autoincrement()) // Уникальный ID архива
-  originalId Int // ID оригинального заказа
-  orderData Json // Полная копия данных заказа в формате JSON
-  archivedAt DateTime @default(now()) // Время архивации
-  
-  @@index([originalId]) // Индекс для связи с оригинальным заказом
-  @@index([archivedAt]) // Индекс для очистки старых архивов
-  @@map("order_archives") // Название таблицы в БД
+// ==================== ОБЯЗАТЕЛЬНЫЕ ENUMS ====================
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  DELIVERED
+  CANCELLED
 }
 
-// ==================== СУЩЕСТВУЮЩИЕ ВСПОМОГАТЕЛЬНЫЕ МОДЕЛИ ====================
-
-// Избранные повара - персонализация пользовательского опыта
-model FavoriteChef {
-  id      Int   @id @default(autoincrement()) // Уникальный ID избранного повара
-  userId  Int // ID пользователя
-  chefId  Int // ID повара
-  user    User  @relation(fields: [userId], references: [id]) // Связь с пользователем
-  chef    Chef  @relation(fields: [chefId], references: [id]) // Связь с поваром
-  createdAt DateTime @default(now()) // Дата добавления в избранное
-
-  @@unique([userId, chefId]) // Уникальная комбинация пользователь-повар
-  @@map("favorite_chefs") // Название таблицы в БД
-  @@index([userId]) // Индекс для быстрого доступа к избранному пользователя
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
 }
 
-// Избранные товары - быстрый доступ к часто заказываемому
-model FavoriteProduct {
-  id        Int     @id @default(autoincrement()) // Уникальный ID избранного товара
-  userId    Int // ID пользователя
-  productId Int // ID товара
-  user      User    @relation(fields: [userId], references: [id]) // Связь с пользователем
-  product   Product @relation(fields: [productId], references: [id]) // Связь с товаром
-  createdAt DateTime @default(now()) // Дата добавления в избранное
-
-  @@unique([userId, productId]) // Уникальная комбинация пользователь-товар
-  @@map("favorite_products") // Название таблицы в БД
-  @@index([userId]) // Индекс для быстрого доступа к избранному пользователя
+enum PaymentMethod {
+  CARD
+  CASH
+  ONLINE
 }
 
-// Расписание поваров - управление временем работы
-model ChefSchedule {
-  id           Int      @id @default(autoincrement()) // Уникальный ID расписания
-  chefId       Int // ID повара
-  dayOfWeek    Int      // День недели (1=Понедельник, 7=Воскресенье)
-  startTime    String   // Время начала работы '09:00'
-  endTime      String   // Время окончания работы '18:00'
-  isAvailable  Boolean  @default(true) // Доступен ли в этот день
-  
-  chef         Chef     @relation(fields: [chefId], references: [id]) // Связь с поваром
-  createdAt    DateTime @default(now()) // Дата создания расписания
-
-  @@map("chef_schedules") // Название таблицы в БД
-  @@index([chefId, dayOfWeek]) // Индекс для построения расписания повара
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+  FREE_DELIVERY
 }
 
-// Выходные дни поваров - исключения
+enum DeliveryStatus {
+  PENDING
+  ASSIGNED
+  PICKED_UP
+  ON_THE_WAY
+  DELIVERED
+  FAILED
+}

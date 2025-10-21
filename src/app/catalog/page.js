@@ -1,11 +1,13 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Header from '../components/layout/Header'
 import Footer from '../components/layout/Footer'
 import FilterSidebar from '../components/ui/FilterSidebar'
 import ProductCard from '../components/ui/ProductCard'
+import ProductCardSkeleton from '../components/ui/ProductCardSkeleton'
+import TransitionWrapper from '../components/ui/TransitionWrapper'
 import Link from 'next/link'
 
 // Расширенные данные товаров для фильтрации
@@ -131,13 +133,24 @@ export default function CatalogPage() {
         dietary: []
     })
     const [sortBy, setSortBy] = useState('popular')
+    const [isLoading, setIsLoading] = useState(true)
 
     // Получаем параметры поиска из URL
     const searchParams = useSearchParams()
     const searchQuery = searchParams.get('search') || ''
 
+    // Имитация загрузки данных
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsLoading(false)
+        }, 800) // Уменьшили время загрузки
+
+        return () => clearTimeout(timer)
+    }, [searchQuery, filters, sortBy])
+
     // Функция применения фильтров
     const handleFiltersChange = (newFilters) => {
+        setIsLoading(true)
         setFilters(newFilters)
     }
 
@@ -200,6 +213,9 @@ export default function CatalogPage() {
         return filtered
     }, [filters, sortBy, searchQuery])
 
+    // Ключ для анимации перехода
+    const contentKey = `${isLoading}-${filteredProducts.length}-${searchQuery}`
+
     return (
         <div className="min-h-screen bg-bakery-50">
             <Header />
@@ -224,9 +240,11 @@ export default function CatalogPage() {
                         <h1 className="text-3xl font-bold text-bakery-1150 mb-2 font-display">
                             {searchQuery ? `Результаты поиска: "${searchQuery}"` : 'Все товары'}
                         </h1>
-                        <p className="text-bakery-1050 font-body">
-                            Найдено {filteredProducts.length} товаров • Показано 1-{filteredProducts.length} из {filteredProducts.length}
-                        </p>
+                        {!isLoading && (
+                            <p className="text-bakery-1050 font-body">
+                                Найдено {filteredProducts.length} товаров • Показано 1-{filteredProducts.length} из {filteredProducts.length}
+                            </p>
+                        )}
                     </div>
 
                     {/* Селектор сортировки */}
@@ -234,7 +252,11 @@ export default function CatalogPage() {
                         <select
                             className="bg-white border border-bakery-200 rounded-xl px-4 py-2 text-bakery-1100 focus:ring-2 focus:ring-bakery-400 focus:border-transparent font-body"
                             value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value)}
+                            onChange={(e) => {
+                                setIsLoading(true)
+                                setSortBy(e.target.value)
+                            }}
+                            disabled={isLoading}
                         >
                             <option value="popular">По популярности</option>
                             <option value="price-high">Сначала дорогие</option>
@@ -256,72 +278,83 @@ export default function CatalogPage() {
                         />
                     </aside>
 
-                    {/* Сетка товаров */}
-                    <main className="flex-1">
-                        {filteredProducts.length === 0 ? (
-                            <div className="text-center py-16">
-                                <div className="text-6xl mb-4">
-                                    {searchQuery ? '🔍' : '😔'}
-                                </div>
-                                <h2 className="text-2xl font-bold text-bakery-1150 mb-4 font-display">
-                                    {searchQuery ? 'Товары не найдены' : 'Нет товаров по выбранным фильтрам'}
-                                </h2>
-                                <p className="text-bakery-1050 mb-8 font-body">
-                                    {searchQuery
-                                        ? `По запросу "${searchQuery}" ничего не найдено. Попробуйте изменить поисковый запрос.`
-                                        : 'Попробуйте изменить параметры фильтров'
-                                    }
-                                </p>
-                                <div className="flex gap-4 justify-center">
-                                    <button
-                                        className="bg-bakery-500 text-white px-6 py-3 rounded-xl hover:bg-bakery-600 transition-colors font-body"
-                                        onClick={() => setFilters({ categories: [], priceRange: [0, 5000], dietary: [] })}
-                                    >
-                                        Сбросить фильтры
-                                    </button>
-                                    {searchQuery && (
-                                        <Link href="/catalog">
-                                            <button className="bg-bakery-200 text-bakery-1100 px-6 py-3 rounded-xl hover:bg-bakery-300 transition-colors font-body">
-                                                Показать все товары
-                                            </button>
-                                        </Link>
-                                    )}
-                                </div>
-                            </div>
-                        ) : (
-                            <>
+                    {/* Сетка товаров с плавным переходом */}
+                    <main className="flex-1 min-h-[400px]">
+                        <TransitionWrapper keyName={contentKey}>
+                            {isLoading ? (
+                                // Скелетоны во время загрузки
                                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                                    {filteredProducts.map((product) => (
-                                        <ProductCard key={product.id} product={product} />
+                                    {[...Array(6)].map((_, index) => (
+                                        <ProductCardSkeleton key={index} />
                                     ))}
                                 </div>
-
-                                {/* Пагинация */}
-                                <div className="flex justify-center items-center gap-2 mt-12">
-                                    <button className="w-10 h-10 flex items-center justify-center text-bakery-1050 hover:text-bakery-500 transition-colors font-body">
-                                        ←
-                                    </button>
-                                    <button className="w-10 h-10 flex items-center justify-center bg-bakery-500 text-white rounded-xl font-body">
-                                        1
-                                    </button>
-                                    <button className="w-10 h-10 flex items-center justify-center text-bakery-1050 hover:text-bakery-500 transition-colors font-body">
-                                        2
-                                    </button>
-                                    <button className="w-10 h-10 flex items-center justify-center text-bakery-1050 hover:text-bakery-500 transition-colors font-body">
-                                        3
-                                    </button>
-                                    <span className="text-bakery-1050 px-2 font-body">...</span>
-                                    <button className="w-10 h-10 flex items-center justify-center text-bakery-1050 hover:text-bakery-500 transition-colors font-body">
-                                        5
-                                    </button>
-                                    <button className="w-10 h-10 flex items-center justify-center text-bakery-1050 hover:text-bakery-500 transition-colors font-body">
-                                        →
-                                    </button>
+                            ) : filteredProducts.length === 0 ? (
+                                // Сообщение когда товаров нет
+                                <div className="text-center py-16">
+                                    <div className="text-6xl mb-4">
+                                        {searchQuery ? '🔍' : '😔'}
+                                    </div>
+                                    <h2 className="text-2xl font-bold text-bakery-1150 mb-4 font-display">
+                                        {searchQuery ? 'Товары не найдены' : 'Нет товаров по выбранным фильтрам'}
+                                    </h2>
+                                    <p className="text-bakery-1050 mb-8 font-body">
+                                        {searchQuery
+                                            ? `По запросу "${searchQuery}" ничего не найдено. Попробуйте изменить поисковый запрос.`
+                                            : 'Попробуйте изменить параметры фильтров'
+                                        }
+                                    </p>
+                                    <div className="flex gap-4 justify-center">
+                                        <button
+                                            className="bg-bakery-500 text-white px-6 py-3 rounded-xl hover:bg-bakery-600 transition-colors font-body"
+                                            onClick={() => setFilters({ categories: [], priceRange: [0, 5000], dietary: [] })}
+                                        >
+                                            Сбросить фильтры
+                                        </button>
+                                        {searchQuery && (
+                                            <Link href="/catalog">
+                                                <button className="bg-bakery-200 text-bakery-1100 px-6 py-3 rounded-xl hover:bg-bakery-300 transition-colors font-body">
+                                                    Показать все товары
+                                                </button>
+                                            </Link>
+                                        )}
+                                    </div>
                                 </div>
-                            </>
-                        )}
+                            ) : (
+                                // Товары после загрузки
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                    {filteredProducts.map((product, index) => (
+                                        <ProductCard key={product.id} product={product} index={index} />
+                                    ))}
+                                </div>
+                            )}
+                        </TransitionWrapper>
                     </main>
                 </div>
+
+                {/* Пагинация (только когда есть товары) */}
+                {!isLoading && filteredProducts.length > 0 && (
+                    <div className="flex justify-center items-center gap-2 mt-12">
+                        <button className="w-10 h-10 flex items-center justify-center text-bakery-1050 hover:text-bakery-500 transition-colors font-body">
+                            ←
+                        </button>
+                        <button className="w-10 h-10 flex items-center justify-center bg-bakery-500 text-white rounded-xl font-body">
+                            1
+                        </button>
+                        <button className="w-10 h-10 flex items-center justify-center text-bakery-1050 hover:text-bakery-500 transition-colors font-body">
+                            2
+                        </button>
+                        <button className="w-10 h-10 flex items-center justify-center text-bakery-1050 hover:text-bakery-500 transition-colors font-body">
+                            3
+                        </button>
+                        <span className="text-bakery-1050 px-2 font-body">...</span>
+                        <button className="w-10 h-10 flex items-center justify-center text-bakery-1050 hover:text-bakery-500 transition-colors font-body">
+                            5
+                        </button>
+                        <button className="w-10 h-10 flex items-center justify-center text-bakery-1050 hover:text-bakery-500 transition-colors font-body">
+                            →
+                        </button>
+                    </div>
+                )}
             </div>
 
             <Footer />

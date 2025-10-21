@@ -4,10 +4,11 @@ const Button = ({
     children,
     variant = 'primary',
     size = 'md',
+    loading = false,
     className = '',
     ...props
 }) => {
-    const baseClasses = 'font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 font-body'
+    const baseClasses = 'font-medium rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 font-body disabled:opacity-50 disabled:cursor-not-allowed'
 
     const variants = {
         primary: 'bg-bakery-400 hover:bg-bakery-500 text-white focus:ring-bakery-400 shadow-bakery-soft hover:shadow-bakery-medium',
@@ -24,9 +25,16 @@ const Button = ({
 
     return (
         <button
-            className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`}
+            className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className} ${loading ? 'relative !text-transparent' : ''
+                }`}
+            disabled={loading}
             {...props}
         >
+            {loading && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            )}
             {children}
         </button>
     )

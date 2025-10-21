@@ -4,9 +4,12 @@ import Link from 'next/link'
 import Button from '../ui/Button'
 import Rating from '../ui/Rating'
 import { useCart } from '../../context/CartContext'
+import { useToast } from '../../context/ToastContext'
+import FadeIn from '../ui/FadeIn'
 
 const RecommendedProducts = () => {
     const { addToCart } = useCart()
+    const { addToast } = useToast()
 
     const products = [
         {
@@ -48,68 +51,69 @@ const RecommendedProducts = () => {
         e.preventDefault()
         e.stopPropagation()
         addToCart(product)
-        alert(`Товар "${product.name}" добавлен в корзину!`)
+        addToast(`"${product.name}" добавлен в корзину!`, 'success')
     }
 
     return (
-        <section className="py-16 bg-white">
-            <div className="container mx-auto px-4">
-                <div className="flex items-center justify-between mb-8">
-                    <h2 className="text-3xl font-bold text-bakery-1150 font-display">
-                        Новинки недели
-                    </h2>
-                    <Link href="/catalog">
-                        <Button variant="outline" size="sm">
-                            Все новинки
-                        </Button>
-                    </Link>
-                </div>
+        <FadeIn>
+            <section className="py-16 bg-white">
+                <div className="container mx-auto px-4">
+                    <div className="flex items-center justify-between mb-8">
+                        <h2 className="text-3xl font-bold text-bakery-1150 font-display">
+                            Новинки недели
+                        </h2>
+                        <Link href="/catalog">
+                            <Button variant="outline" size="sm">
+                                Все новинки
+                            </Button>
+                        </Link>
+                    </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {products.map((product) => (
-                        <div
-                            key={product.id}
-                            className="bg-bakery-50 rounded-2xl p-4 shadow-bakery-soft hover:shadow-bakery-medium transition-all duration-300 border border-bakery-200 group"
-                        >
-                            {/* Ссылка на весь кликабельный блок */}
-                            <Link href={`/product/${product.id}`} className="block">
-                                <div className="cursor-pointer mb-3">
-                                    {/* Изображение товара */}
-                                    <div className="bg-white rounded-xl w-full h-48 mb-4 flex items-center justify-center text-bakery-300 text-4xl group-hover:scale-105 transition-transform duration-300">
-                                        🎂
-                                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {products.map((product, index) => (
+                            <FadeIn key={product.id} delay={index * 0.1}>
+                                <div className="bg-bakery-50 rounded-2xl p-4 shadow-bakery-soft hover:shadow-bakery-medium transition-all duration-300 border border-bakery-200 group">
+                                    {/* Ссылка на весь кликабельный блок */}
+                                    <Link href={`/product/${product.id}`} className="block">
+                                        <div className="cursor-pointer mb-3">
+                                            {/* Изображение товара */}
+                                            <div className="bg-white rounded-xl w-full h-48 mb-4 flex items-center justify-center text-bakery-300 text-4xl group-hover:scale-105 transition-transform duration-300">
+                                                🎂
+                                            </div>
 
-                                    {/* Информация о товаре */}
-                                    <div>
-                                        <h3 className="font-semibold text-bakery-1150 text-lg mb-1 font-body group-hover:text-bakery-500 transition-colors line-clamp-2">
-                                            {product.name}
-                                        </h3>
-                                        <p className="text-bakery-1050 text-sm mb-2 font-body">
-                                            {product.baker}
-                                        </p>
-                                        <Rating rating={product.rating} size="sm" />
+                                            {/* Информация о товаре */}
+                                            <div>
+                                                <h3 className="font-semibold text-bakery-1150 text-lg mb-1 font-body group-hover:text-bakery-500 transition-colors line-clamp-2">
+                                                    {product.name}
+                                                </h3>
+                                                <p className="text-bakery-1050 text-sm mb-2 font-body">
+                                                    {product.baker}
+                                                </p>
+                                                <Rating rating={product.rating} size="sm" />
+                                            </div>
+                                        </div>
+                                    </Link>
+
+                                    {/* Цена и кнопка (отдельно от ссылки) */}
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xl font-bold text-bakery-500">
+                                            {product.price}₽
+                                        </span>
+                                        <Button
+                                            size="sm"
+                                            className="!px-3 !py-2 hover:scale-110 transition-transform"
+                                            onClick={(e) => handleAddToCart(e, product)}
+                                        >
+                                            +
+                                        </Button>
                                     </div>
                                 </div>
-                            </Link>
-
-                            {/* Цена и кнопка (отдельно от ссылки) */}
-                            <div className="flex items-center justify-between">
-                                <span className="text-xl font-bold text-bakery-500">
-                                    {product.price}₽
-                                </span>
-                                <Button
-                                    size="sm"
-                                    className="!px-3 !py-2"
-                                    onClick={(e) => handleAddToCart(e, product)}
-                                >
-                                    +
-                                </Button>
-                            </div>
-                        </div>
-                    ))}
+                            </FadeIn>
+                        ))}
+                    </div>
                 </div>
-            </div>
-        </section>
+            </section>
+        </FadeIn>
     )
 }
 

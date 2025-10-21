@@ -3,17 +3,59 @@
 
 import { PrismaClient } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
-import { userSchema, type UserFormData } from '../validations/schemas'
 
 const prisma = new PrismaClient()
 
-// CREATE
-export async function createUser(formData: UserFormData) {
+// READ (List) - возвращает массив пользователей
+export async function getUsers() {
   try {
-    const validatedData = userSchema.parse(formData)
-    
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        phone: true,
+        createdAt: true,
+        updatedAt: true,
+        chefProfile: { // Включаем сам профиль повара вместо подсчета
+          select: {
+            id: true
+          }
+        },
+        _count: {
+          select: {
+            orders: true,
+            reviews: true,
+            addresses: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+
+    return users || []
+  } catch (error) {
+    console.error('Error fetching users:', error)
+    return []
+  }
+}
+
+// CREATE
+export async function createUser(formData: FormData) {
+  try {
+    const firstName = formData.get("firstName") as string
+    const email = formData.get("email") as string
+    const password = formData.get("password") as string
+    const phone = formData.get("phone") as string
+
+    // Валидация данных
+    if (!firstName || !email || !password) {
+      return { error: 'Имя, email и пароль обязательны для заполнения' }
+    }
+
+    // Проверка существующего пользователя
     const existingUser = await prisma.user.findUnique({
-      where: { email: validatedData.email }
+      where: { email }
     })
 
     if (existingUser) {
@@ -21,7 +63,12 @@ export async function createUser(formData: UserFormData) {
     }
 
     const user = await prisma.user.create({
-      data: validatedData
+      data: {
+        firstName,
+        email,
+        passwordHash: password,
+        phone: phone || null
+      }
     })
 
     revalidatePath('/admin/users')
@@ -32,66 +79,62 @@ export async function createUser(formData: UserFormData) {
   }
 }
 
-// READ (List)
-export async function getUsers(page: number = 1, limit: number = 20, search?: string) {
+// DELETE
+export async function deleteUser(id: number) {
   try {
-    const skip = (page - 1) * limit
-    
-    const where = search ? {
-      OR: [
-        { email: { contains: search, mode: 'insensitive' } },
-        { firstName: { contains: search, mode: 'insensitive' } },
-        { phone: { contains: search, mode: 'insensitive' } },
-      ]
-    } : {}
-
-    const [users, totalCount] = await Promise.all([
-      prisma.user.findMany({
-        where,
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          phone: true,
-          createdAt: true,
-          _count: {
-            select: {
-              orders: true,
-              reviews: true,
-              addresses: true
-            }
+    // Проверяем есть ли связанные данные
+    const userData = await prisma.user.findUnique({
+      where: { id },
+      include: {
+        chefProfile: true, // Включаем профиль повара напрямую
+        _count: {
+          select: {
+            orders: true,
+            reviews: true,
+            addresses: true
           }
-        },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit
-      }),
-      prisma.user.count({ where })
-    ])
-
-    return {
-      success: true,
-      users,
-      pagination: {
-        page,
-        limit,
-        totalCount,
-        totalPages: Math.ceil(totalCount / limit)
+        }
       }
+    })
+
+    if (!userData) {
+      return { error: 'Пользователь не найден' }
     }
+
+    // Проверяем есть ли заказы или профиль повара
+    const hasOrders = userData._count.orders > 0
+    const hasChefProfile = userData.chefProfile !== null // Проверяем наличие профиля
+
+    if (hasOrders || hasChefProfile) {
+      let errorMessage = 'Нельзя удалить пользователя с '
+      const reasons = []
+      if (hasOrders) reasons.push('активными заказами')
+      if (hasChefProfile) reasons.push('профилем повара')
+      errorMessage += reasons.join(' или ')
+      
+      return { error: errorMessage }
+    }
+
+    await prisma.user.delete({
+      where: { id }
+    })
+
+    revalidatePath('/admin/users')
+    return { success: true }
   } catch (error) {
-    console.error('Error fetching users:', error)
-    return { error: 'Ошибка при получении пользователей' }
+    console.error('Error deleting user:', error)
+    return { error: 'Ошибка при удалении пользователя' }
   }
 }
 
-// READ (Single)
+// GET USER BY ID
 export async function getUserById(id: number) {
   try {
     const user = await prisma.user.findUnique({
       where: { id },
       include: {
         addresses: true,
+        chefProfile: true,
         orders: {
           include: {
             chef: true,
@@ -104,18 +147,11 @@ export async function getUserById(id: number) {
           orderBy: { createdAt: 'desc' },
           take: 10
         },
-        chefProfile: {
-          include: {
-            products: { take: 5 },
-            _count: { select: { products: true, orders: true } }
-          }
-        },
         _count: {
           select: {
             orders: true,
             reviews: true,
-            addresses: true,
-            cartItems: true
+            addresses: true
           }
         }
       }
@@ -132,15 +168,18 @@ export async function getUserById(id: number) {
   }
 }
 
-// UPDATE
-export async function updateUser(id: number, formData: Partial<UserFormData>) {
+// UPDATE USER
+export async function updateUser(id, formData) {
   try {
-    const validatedData = userSchema.partial().parse(formData)
-    
-    if (validatedData.email) {
+    const firstName = formData.firstName
+    const email = formData.email
+    const phone = formData.phone
+
+    // Проверяем email на уникальность
+    if (email) {
       const existingUser = await prisma.user.findFirst({
         where: {
-          email: validatedData.email,
+          email: email,
           id: { not: id }
         }
       })
@@ -153,7 +192,9 @@ export async function updateUser(id: number, formData: Partial<UserFormData>) {
     const user = await prisma.user.update({
       where: { id },
       data: {
-        ...validatedData,
+        ...(firstName && { firstName }),
+        ...(email && { email }),
+        ...(phone && { phone }),
         updatedAt: new Date()
       }
     })
@@ -164,42 +205,5 @@ export async function updateUser(id: number, formData: Partial<UserFormData>) {
   } catch (error) {
     console.error('Error updating user:', error)
     return { error: 'Ошибка при обновлении пользователя' }
-  }
-}
-
-// DELETE
-export async function deleteUser(id: number) {
-  try {
-    // Проверяем есть ли связанные данные
-    const userData = await prisma.user.findUnique({
-      where: { id },
-      include: {
-        _count: {
-          select: {
-            orders: true,
-            chefProfile: true,
-            reviews: true
-          }
-        }
-      }
-    })
-
-    if (!userData) {
-      return { error: 'Пользователь не найден' }
-    }
-
-    if (userData._count.orders > 0 || userData._count.chefProfile > 0) {
-      return { error: 'Нельзя удалить пользователя с активными заказами или профилем повара' }
-    }
-
-    await prisma.user.delete({
-      where: { id }
-    })
-
-    revalidatePath('/admin/users')
-    return { success: true }
-  } catch (error) {
-    console.error('Error deleting user:', error)
-    return { error: 'Ошибка при удалении пользователя' }
   }
 }

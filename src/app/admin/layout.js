@@ -1,19 +1,18 @@
-import AdminHeader from "./adminComponents/adminHeader";
-import AdminSidebar from "./adminComponents/adminSideBar";
+import AdminSidebar from "./Components/adminSideBar";
+import AdminHeader from "./Components/adminHeader";
 
-
+// src/app/admin/layout.js
 export default function AdminLayout({ children }) {
   return (
-    <html lang="en">
-      <body>
-        <div className="min-h-screen bg-gray-50">
-          <AdminHeader />
-          <div className="flex">
-            
-            <main className="flex-1 p-6">{children}</main>
-          </div>
-        </div>
-      </body>
-    </html>
+    // Не используйте html/body здесь, они уже в корневом layout
+    <div className="min-h-screen bg-gray-50">
+      <AdminHeader />
+      <div className="flex">
+        <AdminSidebar />
+        <main className="flex-1 p-6">
+          {children}
+        </main>
+      </div>
+    </div>
   );
 }

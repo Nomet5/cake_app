@@ -5,7 +5,9 @@ import Header from '../../components/layout/Header'
 import Footer from '../../components/layout/Footer'
 import Button from '../../components/ui/Button'
 import Rating from '../../components/ui/Rating'
+import ProductReviews from '../../components/sections/ProductReviews'
 import { useCart } from '../../context/CartContext'
+import { useToast } from '../../context/ToastContext'
 import Link from 'next/link'
 
 // Временные данные товара
@@ -48,7 +50,9 @@ const mockProduct = {
 export default function ProductPage({ params }) {
     const product = mockProduct
     const { addToCart } = useCart()
+    const { addToast } = useToast()
     const [selectedPersonalization, setSelectedPersonalization] = useState([])
+    const [activeTab, setActiveTab] = useState('description') // 'description', 'reviews', 'similar'
 
     // Функция для переключения персонализации
     const togglePersonalization = (option) => {
@@ -79,7 +83,12 @@ export default function ProductPage({ params }) {
         }
 
         addToCart(cartItem)
-        alert(`Товар "${product.name}" добавлен в корзину!`)
+        if (selectedPersonalization.length > 0) {
+            const personalizationText = selectedPersonalization.map(p => p.name).join(', ')
+            addToast(`"${product.name}" с ${personalizationText} добавлен в корзину!`, 'success')
+        } else {
+            addToast(`"${product.name}" добавлен в корзину!`, 'success')
+        }
     }
 
     // Расчет итоговой цены с персонализацией
@@ -217,6 +226,75 @@ export default function ProductPage({ params }) {
                             </Button>
                         </div>
                     </div>
+                </div>
+
+                {/* Табы для дополнительной информации */}
+                <div className="mt-12">
+                    <div className="border-b border-bakery-200 mb-8">
+                        <nav className="flex gap-8">
+                            <button
+                                className={`pb-4 font-body font-medium transition-colors ${activeTab === 'description'
+                                        ? 'text-bakery-500 border-b-2 border-bakery-500'
+                                        : 'text-bakery-1050 hover:text-bakery-500'
+                                    }`}
+                                onClick={() => setActiveTab('description')}
+                            >
+                                Описание
+                            </button>
+                            <button
+                                className={`pb-4 font-body font-medium transition-colors ${activeTab === 'reviews'
+                                        ? 'text-bakery-500 border-b-2 border-bakery-500'
+                                        : 'text-bakery-1050 hover:text-bakery-500'
+                                    }`}
+                                onClick={() => setActiveTab('reviews')}
+                            >
+                                Отзывы ({product.reviews})
+                            </button>
+                            <button
+                                className={`pb-4 font-body font-medium transition-colors ${activeTab === 'similar'
+                                        ? 'text-bakery-500 border-b-2 border-bakery-500'
+                                        : 'text-bakery-1050 hover:text-bakery-500'
+                                    }`}
+                                onClick={() => setActiveTab('similar')}
+                            >
+                                Похожие товары
+                            </button>
+                        </nav>
+                    </div>
+
+                    {/* Контент табов */}
+                    {activeTab === 'description' && (
+                        <div className="bg-white rounded-2xl p-8 shadow-bakery-soft border border-bakery-200">
+                            <h3 className="font-semibold text-bakery-1150 text-lg mb-4 font-body">Подробное описание</h3>
+                            <div className="prose prose-bakery max-w-none">
+                                <p className="text-bakery-1100 leading-relaxed font-body">
+                                    {product.description}
+                                </p>
+                                <p className="text-bakery-1100 leading-relaxed font-body mt-4">
+                                    Этот изысканный торт создан для особых моментов в жизни. Нежный шоколадный бисквит
+                                    пропитан ароматным сиропом и сочетается с малиновым конфитюром собственного приготовления.
+                                    Шоколадный ганаш придает торту благородный вкус и идеальную текстуру.
+                                </p>
+                                <p className="text-bakery-1100 leading-relaxed font-body mt-4">
+                                    Идеально подходит для дней рождений, свадеб, юбилеев и других праздничных мероприятий.
+                                    Каждый торт готовится индивидуально с учетом ваших пожеланий.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'reviews' && (
+                        <ProductReviews productId={product.id} productName={product.name} />
+                    )}
+
+                    {activeTab === 'similar' && (
+                        <div className="bg-white rounded-2xl p-8 shadow-bakery-soft border border-bakery-200">
+                            <h3 className="font-semibold text-bakery-1150 text-lg mb-4 font-body">Похожие товары</h3>
+                            <p className="text-bakery-1050 font-body">
+                                Раздел похожих товаров находится в разработке...
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Информация о пекаре */}

@@ -134,6 +134,7 @@ export default function CatalogPage() {
     })
     const [sortBy, setSortBy] = useState('popular')
     const [isLoading, setIsLoading] = useState(true)
+    const [isFiltersOpen, setIsFiltersOpen] = useState(false)
 
     // Получаем параметры поиска из URL
     const searchParams = useSearchParams()
@@ -143,7 +144,7 @@ export default function CatalogPage() {
     useEffect(() => {
         const timer = setTimeout(() => {
             setIsLoading(false)
-        }, 800) // Уменьшили время загрузки
+        }, 800)
 
         return () => clearTimeout(timer)
     }, [searchQuery, filters, sortBy])
@@ -152,6 +153,10 @@ export default function CatalogPage() {
     const handleFiltersChange = (newFilters) => {
         setIsLoading(true)
         setFilters(newFilters)
+        // На мобильных закрываем фильтры после применения
+        if (window.innerWidth < 1024) {
+            setIsFiltersOpen(false)
+        }
     }
 
     // Функция фильтрации и поиска товаров
@@ -235,22 +240,36 @@ export default function CatalogPage() {
                 </div>
 
                 {/* Заголовок и сортировка */}
-                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6">
                     <div>
-                        <h1 className="text-3xl font-bold text-bakery-1150 mb-2 font-display">
+                        <h1 className="text-2xl lg:text-3xl font-bold text-bakery-1150 mb-2 font-display">
                             {searchQuery ? `Результаты поиска: "${searchQuery}"` : 'Все товары'}
                         </h1>
                         {!isLoading && (
-                            <p className="text-bakery-1050 font-body">
-                                Найдено {filteredProducts.length} товаров • Показано 1-{filteredProducts.length} из {filteredProducts.length}
+                            <p className="text-bakery-1050 font-body text-sm lg:text-base">
+                                Найдено {filteredProducts.length} товаров
                             </p>
                         )}
                     </div>
 
-                    {/* Селектор сортировки */}
-                    <div className="mt-4 lg:mt-0">
+                    <div className="flex items-center gap-4 mt-4 lg:mt-0">
+                        {/* Кнопка фильтров для мобильных */}
+                        <button
+                            className="lg:hidden bg-bakery-500 text-white px-4 py-2 rounded-xl flex items-center gap-2 text-sm"
+                            onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+                        >
+                            <span>📊</span>
+                            Фильтры
+                            {(filters.categories.length > 0 || filters.dietary.length > 0) && (
+                                <span className="bg-white text-bakery-500 text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                    !
+                                </span>
+                            )}
+                        </button>
+
+                        {/* Селектор сортировки */}
                         <select
-                            className="bg-white border border-bakery-200 rounded-xl px-4 py-2 text-bakery-1100 focus:ring-2 focus:ring-bakery-400 focus:border-transparent font-body"
+                            className="bg-white border border-bakery-200 rounded-xl px-3 py-2 text-bakery-1100 focus:ring-2 focus:ring-bakery-400 focus:border-transparent font-body text-sm lg:text-base"
                             value={sortBy}
                             onChange={(e) => {
                                 setIsLoading(true)
@@ -267,15 +286,27 @@ export default function CatalogPage() {
                 </div>
 
                 {/* Основной контент с фильтрами */}
-                <div className="flex flex-col lg:flex-row gap-8">
+                <div className="flex flex-col lg:flex-row gap-6">
                     {/* Боковая панель фильтров */}
-                    <aside className="lg:w-80">
-                        <FilterSidebar
-                            onFiltersChange={handleFiltersChange}
-                            selectedCategories={filters.categories}
-                            priceRange={filters.priceRange}
-                            selectedDietary={filters.dietary}
-                        />
+                    <aside className={`lg:w-80 ${isFiltersOpen ? 'block' : 'hidden lg:block'}`}>
+                        <div className="sticky top-24">
+                            {/* Заголовок фильтров для мобильных */}
+                            <div className="flex items-center justify-between mb-4 lg:hidden">
+                                <h2 className="text-lg font-bold text-bakery-1150 font-display">Фильтры</h2>
+                                <button
+                                    className="text-bakery-500 hover:text-bakery-600"
+                                    onClick={() => setIsFiltersOpen(false)}
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                            <FilterSidebar
+                                onFiltersChange={handleFiltersChange}
+                                selectedCategories={filters.categories}
+                                priceRange={filters.priceRange}
+                                selectedDietary={filters.dietary}
+                            />
+                        </div>
                     </aside>
 
                     {/* Сетка товаров с плавным переходом */}
@@ -283,36 +314,39 @@ export default function CatalogPage() {
                         <TransitionWrapper keyName={contentKey}>
                             {isLoading ? (
                                 // Скелетоны во время загрузки
-                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
                                     {[...Array(6)].map((_, index) => (
                                         <ProductCardSkeleton key={index} />
                                     ))}
                                 </div>
                             ) : filteredProducts.length === 0 ? (
                                 // Сообщение когда товаров нет
-                                <div className="text-center py-16">
-                                    <div className="text-6xl mb-4">
+                                <div className="text-center py-12 lg:py-16">
+                                    <div className="text-5xl lg:text-6xl mb-4">
                                         {searchQuery ? '🔍' : '😔'}
                                     </div>
-                                    <h2 className="text-2xl font-bold text-bakery-1150 mb-4 font-display">
+                                    <h2 className="text-xl lg:text-2xl font-bold text-bakery-1150 mb-4 font-display">
                                         {searchQuery ? 'Товары не найдены' : 'Нет товаров по выбранным фильтрам'}
                                     </h2>
-                                    <p className="text-bakery-1050 mb-8 font-body">
+                                    <p className="text-bakery-1050 mb-6 lg:mb-8 font-body text-sm lg:text-base">
                                         {searchQuery
                                             ? `По запросу "${searchQuery}" ничего не найдено. Попробуйте изменить поисковый запрос.`
                                             : 'Попробуйте изменить параметры фильтров'
                                         }
                                     </p>
-                                    <div className="flex gap-4 justify-center">
+                                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
                                         <button
-                                            className="bg-bakery-500 text-white px-6 py-3 rounded-xl hover:bg-bakery-600 transition-colors font-body"
-                                            onClick={() => setFilters({ categories: [], priceRange: [0, 5000], dietary: [] })}
+                                            className="bg-bakery-500 text-white px-6 py-3 rounded-xl hover:bg-bakery-600 transition-colors font-body text-sm lg:text-base"
+                                            onClick={() => {
+                                                setFilters({ categories: [], priceRange: [0, 5000], dietary: [] })
+                                                setIsFiltersOpen(false)
+                                            }}
                                         >
                                             Сбросить фильтры
                                         </button>
                                         {searchQuery && (
                                             <Link href="/catalog">
-                                                <button className="bg-bakery-200 text-bakery-1100 px-6 py-3 rounded-xl hover:bg-bakery-300 transition-colors font-body">
+                                                <button className="bg-bakery-200 text-bakery-1100 px-6 py-3 rounded-xl hover:bg-bakery-300 transition-colors font-body text-sm lg:text-base">
                                                     Показать все товары
                                                 </button>
                                             </Link>
@@ -321,7 +355,7 @@ export default function CatalogPage() {
                                 </div>
                             ) : (
                                 // Товары после загрузки
-                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
                                     {filteredProducts.map((product, index) => (
                                         <ProductCard key={product.id} product={product} index={index} />
                                     ))}
@@ -333,24 +367,24 @@ export default function CatalogPage() {
 
                 {/* Пагинация (только когда есть товары) */}
                 {!isLoading && filteredProducts.length > 0 && (
-                    <div className="flex justify-center items-center gap-2 mt-12">
-                        <button className="w-10 h-10 flex items-center justify-center text-bakery-1050 hover:text-bakery-500 transition-colors font-body">
+                    <div className="flex justify-center items-center gap-1 lg:gap-2 mt-8 lg:mt-12">
+                        <button className="w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center text-bakery-1050 hover:text-bakery-500 transition-colors font-body text-sm lg:text-base">
                             ←
                         </button>
-                        <button className="w-10 h-10 flex items-center justify-center bg-bakery-500 text-white rounded-xl font-body">
+                        <button className="w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center bg-bakery-500 text-white rounded-xl font-body text-sm lg:text-base">
                             1
                         </button>
-                        <button className="w-10 h-10 flex items-center justify-center text-bakery-1050 hover:text-bakery-500 transition-colors font-body">
+                        <button className="w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center text-bakery-1050 hover:text-bakery-500 transition-colors font-body text-sm lg:text-base">
                             2
                         </button>
-                        <button className="w-10 h-10 flex items-center justify-center text-bakery-1050 hover:text-bakery-500 transition-colors font-body">
+                        <button className="w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center text-bakery-1050 hover:text-bakery-500 transition-colors font-body text-sm lg:text-base">
                             3
                         </button>
-                        <span className="text-bakery-1050 px-2 font-body">...</span>
-                        <button className="w-10 h-10 flex items-center justify-center text-bakery-1050 hover:text-bakery-500 transition-colors font-body">
+                        <span className="text-bakery-1050 px-1 lg:px-2 font-body text-sm lg:text-base">...</span>
+                        <button className="w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center text-bakery-1050 hover:text-bakery-500 transition-colors font-body text-sm lg:text-base">
                             5
                         </button>
-                        <button className="w-10 h-10 flex items-center justify-center text-bakery-1050 hover:text-bakery-500 transition-colors font-body">
+                        <button className="w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center text-bakery-1050 hover:text-bakery-500 transition-colors font-body text-sm lg:text-base">
                             →
                         </button>
                     </div>

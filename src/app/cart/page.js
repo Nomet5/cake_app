@@ -60,31 +60,34 @@ const CartPage = () => {
 
     if (cartItems.length === 0) {
         return (
-            <div className="min-h-screen bg-bakery-50">
+            <div className="min-h-screen flex flex-col">
                 <Header />
 
-                <div className="container mx-auto px-4 py-8">
-                    {/* Хлебные крошки */}
-                    <div className="flex items-center gap-2 text-bakery-1050 text-sm mb-6 font-body">
-                        <Link href="/" className="hover:text-bakery-500 transition-colors">Главная</Link>
-                        <span>•</span>
-                        <span className="text-bakery-500">Корзина</span>
-                    </div>
+                {/* Контент занимает все доступное пространство */}
+                <div className="flex-1 flex flex-col">
+                    <div className="container mx-auto px-4 py-8 flex-1 flex flex-col">
+                        {/* Хлебные крошки */}
+                        <div className="flex items-center gap-2 text-bakery-1050 text-sm mb-6 font-body">
+                            <Link href="/" className="hover:text-bakery-500 transition-colors">Главная</Link>
+                            <span>•</span>
+                            <span className="text-bakery-500">Корзина</span>
+                        </div>
 
-                    {/* Пустая корзина */}
-                    <div className="text-center py-16">
-                        <div className="text-6xl mb-4">🛒</div>
-                        <h1 className="text-3xl font-bold text-bakery-1150 mb-4 font-display">
-                            Корзина пуста
-                        </h1>
-                        <p className="text-bakery-1050 text-lg mb-8 font-body">
-                            Добавьте товары из каталога, чтобы сделать заказ
-                        </p>
-                        <Link href="/catalog">
-                            <Button size="lg">
-                                Перейти в каталог
-                            </Button>
-                        </Link>
+                        {/* Пустая корзина - центрируем контент */}
+                        <div className="flex-1 flex flex-col items-center justify-center text-center py-16">
+                            <div className="text-6xl mb-4">🛒</div>
+                            <h1 className="text-3xl font-bold text-bakery-1150 mb-4 font-display">
+                                Корзина пуста
+                            </h1>
+                            <p className="text-bakery-1050 text-lg mb-8 font-body">
+                                Добавьте товары из каталога, чтобы сделать заказ
+                            </p>
+                            <Link href="/catalog">
+                                <Button size="lg">
+                                    Перейти в каталог
+                                </Button>
+                            </Link>
+                        </div>
                     </div>
                 </div>
 

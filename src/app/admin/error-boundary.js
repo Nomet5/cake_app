@@ -2,7 +2,7 @@
 'use client'
 
 import { Component } from 'react'
-import AdminError from './error'
+import AdminError from './Components/layout/error'
 
 class AdminErrorBoundary extends Component {
   constructor(props) {

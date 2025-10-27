@@ -3,7 +3,7 @@
 
 import AdminSidebar from "./Components/layout/admin-sidebar";
 import AdminHeader from "./Components/layout/admin-header";
-import AdminErrorBoundary from "./Components/layout/error-boundary";
+import AdminErrorBoundary from "./error-boundary";
 import AdminBreadcrumbs from "./Components/layout/admin_breadcrumbs";
 
 export default function AdminLayout({ children }) {

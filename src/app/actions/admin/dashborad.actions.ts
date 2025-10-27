@@ -6,8 +6,10 @@ import { revalidatePath } from 'next/cache'
 
 const prisma = new PrismaClient()
 
+
 // Основная статистика дашборда
 export async function getAdminDashboardStats() {
+
   try {
     // Основные счетчики
     const [
@@ -301,7 +303,7 @@ export async function getAdminDashboardStats() {
     })
 
     // Расчет роста
-    const ordersGrowth = yesterdayOrders > 0 
+    const ordersGrowth = yesterdayOrders > 0
       ? Number(((todayOrders - yesterdayOrders) / yesterdayOrders * 100).toFixed(1))
       : todayOrders > 0 ? 100 : 0
 
@@ -363,7 +365,7 @@ export async function getAdminDashboardStats() {
     }
   } catch (error) {
     console.error('Error fetching admin dashboard stats:', error)
-    return { 
+    return {
       success: false,
       error: 'Ошибка при получении статистики дашборда',
       details: error instanceof Error ? error.message : 'Unknown error'
@@ -399,7 +401,7 @@ export async function getSimpleDashboardStats() {
     }
   } catch (error) {
     console.error('Error fetching simple dashboard stats:', error)
-    return { 
+    return {
       success: false,
       error: 'Ошибка при получении статистики'
     }
@@ -424,7 +426,7 @@ export async function updateOrderStatus(orderId, status) {
     }
   } catch (error) {
     console.error('Error updating order status:', error)
-    return { 
+    return {
       success: false,
       error: 'Ошибка при обновлении статуса заказа'
     }
@@ -452,7 +454,7 @@ export async function toggleProductAvailability(productId) {
     }
   } catch (error) {
     console.error('Error toggling product availability:', error)
-    return { 
+    return {
       success: false,
       error: 'Ошибка при изменении статуса товара'
     }

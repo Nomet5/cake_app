@@ -4,6 +4,7 @@ import CategoryActions from './components/category-actions'
 
 export default async function AdminCategoriesPage() {
   const categories = await getCategories()
+  
 
   return (
     <div className="space-y-6">

@@ -1,12 +1,12 @@
 // app/admin/users/[id]/page.js
-import { getUserById } from "../../../actions/admin/user.actions";
+import { getUserById } from "../../../../actions/admin/user.actions";
 import { notFound } from "next/navigation";
-import UserProfile from "./components/user-profile";
-import UserStats from "./components/user-stats";
-import UserActivity from "./components/user-activity";
-import UserOrders from "./components/user-orders";
-import BackButton from "../components/back-button";
-import UserActions from "../components/user-actions";
+import UserProfile from "../components/user-profile";
+import UserStats from "../components/user-stats";
+import UserActivity from "../components/user-activity";
+import UserOrders from "../components/user-orders";
+import BackButton from "../../components/back-button";
+import UserActions from "../../components/user-actions";
 
 export default async function UserDetailPage({ params }) {
   const id = parseInt(params.id);

@@ -2,19 +2,26 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { updateUser } from '../../actions/admin/user.actions'
-import Link from 'next/link' // Добавлен импорт Link
+import Link from 'next/link'
 
 export default function EditUserForm({ user }) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [formData, setFormData] = useState({
     firstName: user.firstName || '',
     email: user.email || '',
     phone: user.phone || ''
   })
+
+  // Сбрасываем сообщения при изменении формы
+  useEffect(() => {
+    setError('')
+    setSuccess('')
+  }, [formData])
 
   // Обработка изменений в форме
   const handleChange = (e) => {
@@ -25,21 +32,42 @@ export default function EditUserForm({ user }) {
     }))
   }
 
+  // Проверка, были ли изменения в форме
+  const hasChanges = () => {
+    return (
+      formData.firstName !== user.firstName ||
+      formData.email !== user.email ||
+      formData.phone !== user.phone
+    )
+  }
+
   // Обработка отправки формы
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsLoading(true)
     setError('')
+    setSuccess('')
+
+    // Проверяем, есть ли изменения
+    if (!hasChanges()) {
+      setError('Нет изменений для сохранения')
+      setIsLoading(false)
+      return
+    }
 
     try {
       const result = await updateUser(user.id, formData)
 
       if (result.success) {
-        // Перенаправляем на страницу пользователя
-        router.push(`/admin/users/${user.id}`)
-        router.refresh()
+        setSuccess('Данные пользователя успешно обновлены')
+        
+        // Задержка перед перенаправлением для отображения успешного сообщения
+        setTimeout(() => {
+          router.push(`/admin/users/${user.id}`)
+          router.refresh()
+        }, 1500)
       } else {
-        setError(result.error)
+        setError(result.error || 'Произошла ошибка при обновлении пользователя')
       }
     } catch (err) {
       setError('Произошла ошибка при обновлении пользователя')
@@ -56,6 +84,13 @@ export default function EditUserForm({ user }) {
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-3">
             <p className="text-red-800 text-sm">{error}</p>
+          </div>
+        )}
+
+        {/* Сообщение об успехе */}
+        {success && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+            <p className="text-green-800 text-sm">{success}</p>
           </div>
         )}
 
@@ -124,19 +159,32 @@ export default function EditUserForm({ user }) {
               {new Date(user.createdAt).toLocaleDateString('ru-RU')}
             </p>
           </div>
+          <div>
+            <label className="text-sm font-medium text-gray-500">Последнее обновление</label>
+            <p className="mt-1 text-gray-900">
+              {new Date(user.updatedAt).toLocaleDateString('ru-RU')}
+            </p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-500">Статус</label>
+            <p className="mt-1 text-gray-900">
+              {user.chefProfile ? 'Повар' : 'Клиент'}
+            </p>
+          </div>
         </div>
 
         {/* Кнопки действий */}
         <div className="flex justify-end space-x-3 pt-6">
           <Link
             href={`/admin/users/${user.id}`}
-            className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            onClick={(e) => isLoading && e.preventDefault()}
           >
             Отмена
           </Link>
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || !hasChanges()}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
           >
             {isLoading ? (

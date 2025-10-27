@@ -1,23 +1,23 @@
-// components/admin/dashboard/quick-actions.jsx
+// src/app/admin/Components/admin/dashboard/quick-actions.jsx
 'use client'
 
 import { useState } from 'react'
 import { Plus, Search, Settings, Download, Bell } from 'lucide-react'
-import { updateOrderStatus, toggleProductAvailability } from '../../../actions/admin/dashborad.actions'
 
-const ActionButton = ({ icon: Icon, label, onClick, variant = 'default' }) => {
+const ActionButton = ({ icon: Icon, label, onClick, variant = 'default', delay = 0 }) => {
   const variants = {
-    default: 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50',
-    primary: 'bg-blue-600 text-white hover:bg-blue-700',
-    secondary: 'bg-green-600 text-white hover:bg-green-700'
+    default: 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400',
+    primary: 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-lg',
+    secondary: 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 shadow-lg'
   }
 
   return (
     <button
       onClick={onClick}
-      className={`flex items-center justify-center p-3 rounded-lg transition-colors ${variants[variant]}`}
+      className={`flex items-center justify-center p-4 rounded-xl transition-all duration-300 hover-lift w-full animate-scale-in ${variants[variant]}`}
+      style={{ animationDelay: `${delay}s` }}
     >
-      <Icon className="h-5 w-5 mr-2" />
+      <Icon className="h-5 w-5 mr-3 transition-transform duration-300 group-hover:scale-110" />
       <span className="font-medium">{label}</span>
     </button>
   )
@@ -28,67 +28,50 @@ export default function QuickActions() {
 
   const handleUpdateOrderStatus = async () => {
     setLoading(true)
-    // В реальном приложении здесь будет модальное окно для выбора заказа и статуса
-    try {
-      // Пример вызова action
-      // const result = await updateOrderStatus('1', 'COMPLETED')
-      // if (result.success) {
-      //   alert(result.message)
-      // }
+    setTimeout(() => {
       alert('Функция обновления статуса заказа будет реализована позже')
-    } catch (error) {
-      alert('Ошибка при обновлении статуса')
-    } finally {
       setLoading(false)
-    }
-  }
-
-  const handleExportData = () => {
-    alert('Функция экспорта данных будет реализована позже')
-  }
-
-  const handleCreateProduct = () => {
-    // В реальном приложении - навигация на страницу создания товара
-    alert('Переход на страницу создания товара')
+    }, 1000)
   }
 
   const actions = [
     {
       icon: Plus,
       label: 'Добавить товар',
-      onClick: handleCreateProduct,
-      variant: 'primary'
+      onClick: () => alert('Переход на страницу создания товара'),
+      variant: 'primary',
+      delay: 0
     },
     {
       icon: Search,
       label: 'Поиск заказов',
       onClick: () => alert('Поиск заказов'),
-      variant: 'default'
+      variant: 'default',
+      delay: 0.1
     },
     {
       icon: Settings,
       label: 'Настройки',
       onClick: () => alert('Настройки'),
-      variant: 'default'
+      variant: 'default',
+      delay: 0.2
     },
     {
       icon: Download,
       label: 'Экспорт данных',
-      onClick: handleExportData,
-      variant: 'secondary'
-    },
-    {
-      icon: Bell,
-      label: 'Уведомления',
-      onClick: () => alert('Уведомления'),
-      variant: 'default'
+      onClick: () => alert('Функция экспорта данных будет реализована позже'),
+      variant: 'secondary',
+      delay: 0.3
     }
   ]
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Быстрые действия</h3>
-      <div className="space-y-3">
+    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 animate-scale-in">
+      <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
+        <span className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></span>
+        Быстрые действия
+      </h3>
+      <div className="space-y-4">
         {actions.map((action, index) => (
           <ActionButton
             key={index}
@@ -96,14 +79,18 @@ export default function QuickActions() {
             label={action.label}
             onClick={action.onClick}
             variant={action.variant}
+            delay={action.delay}
           />
         ))}
       </div>
       
       {/* Статус загрузки */}
       {loading && (
-        <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-          <p className="text-blue-700 text-sm">Выполняется действие...</p>
+        <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200 animate-fade-in">
+          <div className="flex items-center">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-3"></div>
+            <p className="text-blue-700 text-sm font-medium">Выполняется действие...</p>
+          </div>
         </div>
       )}
     </div>

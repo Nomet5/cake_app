@@ -3,6 +3,7 @@
 
 import { PrismaClient } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 
 const prisma = new PrismaClient()
 
@@ -48,35 +49,65 @@ export async function createUser(formData: FormData) {
     const password = formData.get("password") as string
     const phone = formData.get("phone") as string
 
+    console.log('Creating user with:', { firstName, email, phone }); // Для отладки
+
     // Валидация данных
-    if (!firstName || !email || !password) {
-      return { error: 'Имя, email и пароль обязательны для заполнения' }
+    if (!firstName?.trim()) {
+      return { error: 'Имя обязательно для заполнения' }
+    }
+
+    if (!email?.trim()) {
+      return { error: 'Email обязателен для заполнения' }
+    }
+
+    if (!password?.trim()) {
+      return { error: 'Пароль обязателен для заполнения' }
+    }
+
+    if (password.length < 6) {
+      return { error: 'Пароль должен содержать минимум 6 символов' }
     }
 
     // Проверка существующего пользователя
     const existingUser = await prisma.user.findUnique({
-      where: { email }
+      where: { email: email.trim().toLowerCase() }
     })
 
     if (existingUser) {
       return { error: 'Пользователь с таким email уже существует' }
     }
 
+    // Создаем пользователя
     const user = await prisma.user.create({
       data: {
-        firstName,
-        email,
-        passwordHash: password,
-        phone: phone || null
+        firstName: firstName.trim(),
+        email: email.trim().toLowerCase(),
+        passwordHash: await hashPassword(password), // Хешируем пароль
+        phone: phone?.trim() || null
       }
     })
 
     revalidatePath('/admin/users')
-    return { success: true, user }
+    
+    // Перенаправляем после успешного создания
+    redirect('/admin/users')
+    
   } catch (error) {
     console.error('Error creating user:', error)
     return { error: 'Ошибка при создании пользователя' }
   }
+}
+
+// Функция для хеширования пароля (добавьте эту функцию)
+async function hashPassword(password: string): Promise<string> {
+  // В реальном приложении используйте bcrypt или аналогичную библиотеку
+  // Это временное решение для демонстрации
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 // DELETE
@@ -169,32 +200,39 @@ export async function getUserById(id: number) {
 }
 
 // UPDATE USER
-export async function updateUser(id, formData) {
+
+// UPDATE USER
+export async function updateUser(id: number, data: { firstName: string; email: string; phone?: string }) {
   try {
-    const firstName = formData.firstName
-    const email = formData.email
-    const phone = formData.phone
+    const { firstName, email, phone } = data;
+
+    // Валидация
+    if (!firstName?.trim()) {
+      return { error: 'Имя обязательно для заполнения' }
+    }
+
+    if (!email?.trim()) {
+      return { error: 'Email обязателен для заполнения' }
+    }
 
     // Проверяем email на уникальность
-    if (email) {
-      const existingUser = await prisma.user.findFirst({
-        where: {
-          email: email,
-          id: { not: id }
-        }
-      })
-
-      if (existingUser) {
-        return { error: 'Пользователь с таким email уже существует' }
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        email: email.trim().toLowerCase(),
+        id: { not: id }
       }
+    })
+
+    if (existingUser) {
+      return { error: 'Пользователь с таким email уже существует' }
     }
 
     const user = await prisma.user.update({
       where: { id },
       data: {
-        ...(firstName && { firstName }),
-        ...(email && { email }),
-        ...(phone && { phone }),
+        firstName: firstName.trim(),
+        email: email.trim().toLowerCase(),
+        phone: phone?.trim() || null,
         updatedAt: new Date()
       }
     })

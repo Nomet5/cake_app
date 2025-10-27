@@ -1,5 +1,9 @@
 // app/admin/reviews/page.tsx
-import { getReviews, approveReview, deleteReview } from "../../lib/actions/review.actions";
+import {
+  getReviews,
+  approveReview,
+  deleteReview,
+} from "../../actions/admin/review.actions";
 
 export default async function ReviewsPage() {
   const reviews = await getReviews();
@@ -24,7 +28,7 @@ export default async function ReviewsPage() {
               <tr key={review.id} className="border-b hover:bg-gray-50">
                 <td className="p-3">{review.user.firstName}</td>
                 <td className="p-3">{review.chef.businessName}</td>
-                <td className="p-3">{'⭐'.repeat(review.rating)}</td>
+                <td className="p-3">{"⭐".repeat(review.rating)}</td>
                 <td className="p-3">
                   {review.isApproved ? (
                     <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">
@@ -38,13 +42,19 @@ export default async function ReviewsPage() {
                 </td>
                 <td className="p-3 space-x-2">
                   {!review.isApproved && (
-                    <form action={approveReview.bind(null, review.id)} className="inline">
+                    <form
+                      action={approveReview.bind(null, review.id)}
+                      className="inline"
+                    >
                       <button className="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600">
                         Одобрить
                       </button>
                     </form>
                   )}
-                  <form action={deleteReview.bind(null, review.id)} className="inline">
+                  <form
+                    action={deleteReview.bind(null, review.id)}
+                    className="inline"
+                  >
                     <button className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">
                       Удалить
                     </button>

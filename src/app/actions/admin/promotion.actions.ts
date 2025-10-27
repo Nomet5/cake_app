@@ -3,7 +3,7 @@
 
 import { PrismaClient } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
-import { promotionSchema, type PromotionFormData } from '../validations/schemas'
+import { promotionSchema, type PromotionFormData } from '../../lib/validations/schemas'
 
 const prisma = new PrismaClient()
 
@@ -11,7 +11,7 @@ const prisma = new PrismaClient()
 export async function createPromotion(formData: PromotionFormData) {
   try {
     const validatedData = promotionSchema.parse(formData)
-    
+
     // Проверяем существует ли повар
     const chef = await prisma.chef.findUnique({
       where: { id: validatedData.chefId }
@@ -52,18 +52,20 @@ export async function createPromotion(formData: PromotionFormData) {
 export async function getPromotions(page: number = 1, limit: number = 20, search?: string, chefId?: number, activeOnly: boolean = false) {
   try {
     const skip = (page - 1) * limit
-    
+
     const where = {
       ...(search ? {
         OR: [
           { title: { contains: search, mode: 'insensitive' } },
-          { chef: { 
-            businessName: { contains: search, mode: 'insensitive' }
-          } }
+          {
+            chef: {
+              businessName: { contains: search, mode: 'insensitive' }
+            }
+          }
         ]
       } : {}),
       ...(chefId ? { chefId } : {}),
-      ...(activeOnly ? { 
+      ...(activeOnly ? {
         isActive: true,
         startDate: { lte: new Date() },
         endDate: { gte: new Date() }
@@ -77,11 +79,11 @@ export async function getPromotions(page: number = 1, limit: number = 20, search
           chef: {
             select: {
               businessName: true,
-              user: { 
-                select: { 
-                  firstName: true, 
-                  email: true 
-                } 
+              user: {
+                select: {
+                  firstName: true,
+                  email: true
+                }
               }
             }
           }
@@ -291,9 +293,9 @@ export async function deactivateExpiredPromotions() {
     })
 
     revalidatePath('/admin/promotions')
-    return { 
-      success: true, 
-      message: `Деактивировано ${result.count} истекших акций` 
+    return {
+      success: true,
+      message: `Деактивировано ${result.count} истекших акций`
     }
   } catch (error) {
     console.error('Error deactivating expired promotions:', error)

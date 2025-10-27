@@ -3,7 +3,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { updateUser } from '../..//lib/actions/user.actions'
+import { updateUser } from '../../actions/admin/user.actions'
 import Link from 'next/link' // Добавлен импорт Link
 
 export default function EditUserForm({ user }) {
@@ -33,7 +33,7 @@ export default function EditUserForm({ user }) {
 
     try {
       const result = await updateUser(user.id, formData)
-      
+
       if (result.success) {
         // Перенаправляем на страницу пользователя
         router.push(`/admin/users/${user.id}`)

@@ -28,7 +28,7 @@
     ".next/types/**/*.ts",
     "**/*.ts",
     "**/*.tsx"
-, "src/app/admin/users/[id]/page.js", "src/app/admin/Components/adminPagination.tsx"  ],
+, "src/app/admin/users/[id]/page.js", "src/app/admin/Components/adminPagination.tsx", "src/app/admin/products/handler.js"  ],
   "exclude": [
     "node_modules"
   ]

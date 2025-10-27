@@ -4,7 +4,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { createUser } from '../../lib/actions/user.actions'
+import { createUser } from '../../actions/admin/user.actions'
 
 export default function CreateUserModal() {
   const router = useRouter()

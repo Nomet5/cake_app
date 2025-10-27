@@ -1,5 +1,5 @@
 // src/app/admin/users/page.js
-import { getUsers } from "../../lib/actions/user.actions";
+import { getUsers } from "../../actions/admin/user.actions";
 import Link from "next/link";
 import CreateUserModal from "../Components/createUserModal";
 

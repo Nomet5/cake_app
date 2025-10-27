@@ -1,21 +1,21 @@
 // app/admin/users/[id]/page.tsx
-import { getUserById } from '../../../lib/actions/user.actions'
-import { notFound } from 'next/navigation'
-import Link from 'next/link'
+import { getUserById } from "../../../actions/admin/user.actions";
+import { notFound } from "next/navigation";
+import Link from "next/link";
 
 export default async function UserDetailPage(props) {
   // Получаем ID из параметров
-  const id = parseInt(props.params.id)
-  
+  const id = parseInt(props.params.id);
+
   // Получаем данные пользователя
-  const result = await getUserById(id)
+  const result = await getUserById(id);
 
   // Если пользователь не найден, показываем 404
   if (!result.success) {
-    notFound()
+    notFound();
   }
 
-  const { user } = result
+  const { user } = result;
 
   return (
     <div className="p-6">
@@ -31,7 +31,10 @@ export default async function UserDetailPage(props) {
             <span className="text-gray-400">/</span>
           </li>
           <li>
-            <Link href="/admin/users" className="text-gray-500 hover:text-gray-700">
+            <Link
+              href="/admin/users"
+              className="text-gray-500 hover:text-gray-700"
+            >
               Пользователи
             </Link>
           </li>
@@ -50,7 +53,7 @@ export default async function UserDetailPage(props) {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold">
-            {user.firstName || 'Пользователь без имени'}
+            {user.firstName || "Пользователь без имени"}
           </h1>
           <p className="text-gray-600">{user.email}</p>
         </div>
@@ -83,23 +86,35 @@ export default async function UserDetailPage(props) {
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Имя</label>
-                <p className="mt-1">{user.firstName || 'Не указано'}</p>
+                <p className="mt-1">{user.firstName || "Не указано"}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Email</label>
+                <label className="text-sm font-medium text-gray-500">
+                  Email
+                </label>
                 <p className="mt-1">{user.email}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Телефон</label>
-                <p className="mt-1">{user.phone || 'Не указан'}</p>
+                <label className="text-sm font-medium text-gray-500">
+                  Телефон
+                </label>
+                <p className="mt-1">{user.phone || "Не указан"}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Дата регистрации</label>
-                <p className="mt-1">{new Date(user.createdAt).toLocaleDateString('ru-RU')}</p>
+                <label className="text-sm font-medium text-gray-500">
+                  Дата регистрации
+                </label>
+                <p className="mt-1">
+                  {new Date(user.createdAt).toLocaleDateString("ru-RU")}
+                </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Последнее обновление</label>
-                <p className="mt-1">{new Date(user.updatedAt).toLocaleDateString('ru-RU')}</p>
+                <label className="text-sm font-medium text-gray-500">
+                  Последнее обновление
+                </label>
+                <p className="mt-1">
+                  {new Date(user.updatedAt).toLocaleDateString("ru-RU")}
+                </p>
               </div>
             </div>
           </div>
@@ -109,20 +124,26 @@ export default async function UserDetailPage(props) {
             <h2 className="text-lg font-semibold mb-4">Статистика</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <p className="text-2xl font-bold text-blue-600">{user._count?.orders || 0}</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {user._count?.orders || 0}
+                </p>
                 <p className="text-sm text-gray-600">Заказы</p>
               </div>
               <div className="text-center p-4 bg-green-50 rounded-lg">
-                <p className="text-2xl font-bold text-green-600">{user._count?.reviews || 0}</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {user._count?.reviews || 0}
+                </p>
                 <p className="text-sm text-gray-600">Отзывы</p>
               </div>
               <div className="text-center p-4 bg-purple-50 rounded-lg">
-                <p className="text-2xl font-bold text-purple-600">{user._count?.addresses || 0}</p>
+                <p className="text-2xl font-bold text-purple-600">
+                  {user._count?.addresses || 0}
+                </p>
                 <p className="text-sm text-gray-600">Адреса</p>
               </div>
               <div className="text-center p-4 bg-orange-50 rounded-lg">
                 <p className="text-2xl font-bold text-orange-600">
-                  {user.chefProfile ? 'Да' : 'Нет'}
+                  {user.chefProfile ? "Да" : "Нет"}
                 </p>
                 <p className="text-sm text-gray-600">Повар</p>
               </div>
@@ -135,17 +156,21 @@ export default async function UserDetailPage(props) {
               <h2 className="text-lg font-semibold mb-4">Последние заказы</h2>
               <div className="space-y-3">
                 {user.orders.map((order) => (
-                  <div key={order.id} className="flex justify-between items-center p-3 border rounded-lg">
+                  <div
+                    key={order.id}
+                    className="flex justify-between items-center p-3 border rounded-lg"
+                  >
                     <div>
                       <p className="font-medium">Заказ #{order.orderNumber}</p>
                       <p className="text-sm text-gray-600">
-                        {order.chef?.user?.firstName || 'Повар'} • {order.status}
+                        {order.chef?.user?.firstName || "Повар"} •{" "}
+                        {order.status}
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="font-medium">{order.totalAmount} ₽</p>
                       <p className="text-sm text-gray-600">
-                        {new Date(order.createdAt).toLocaleDateString('ru-RU')}
+                        {new Date(order.createdAt).toLocaleDateString("ru-RU")}
                       </p>
                     </div>
                   </div>
@@ -163,7 +188,9 @@ export default async function UserDetailPage(props) {
               <h2 className="text-lg font-semibold mb-4">Профиль повара</h2>
               <div className="space-y-2">
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Статус</label>
+                  <label className="text-sm font-medium text-gray-500">
+                    Статус
+                  </label>
                   <p className="mt-1">
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                       Активен
@@ -171,11 +198,17 @@ export default async function UserDetailPage(props) {
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Товаров</label>
-                  <p className="mt-1">{user.chefProfile._count?.products || 0}</p>
+                  <label className="text-sm font-medium text-gray-500">
+                    Товаров
+                  </label>
+                  <p className="mt-1">
+                    {user.chefProfile._count?.products || 0}
+                  </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Заказов</label>
+                  <label className="text-sm font-medium text-gray-500">
+                    Заказов
+                  </label>
                   <p className="mt-1">{user.chefProfile._count?.orders || 0}</p>
                 </div>
               </div>
@@ -189,10 +222,14 @@ export default async function UserDetailPage(props) {
               <div className="space-y-3">
                 {user.addresses.map((address) => (
                   <div key={address.id} className="p-3 border rounded-lg">
-                    <p className="font-medium">{address.title || 'Основной адрес'}</p>
+                    <p className="font-medium">
+                      {address.title || "Основной адрес"}
+                    </p>
                     <p className="text-sm text-gray-600">{address.address}</p>
                     {address.apartment && (
-                      <p className="text-sm text-gray-600">Кв. {address.apartment}</p>
+                      <p className="text-sm text-gray-600">
+                        Кв. {address.apartment}
+                      </p>
                     )}
                   </div>
                 ))}
@@ -232,5 +269,5 @@ export default async function UserDetailPage(props) {
         </div>
       </div>
     </div>
-  )
+  );
 }

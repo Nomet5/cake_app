@@ -58,6 +58,8 @@ model Chef {
   description  String?
   isActive     Boolean   @default(true)
   isVerified   Boolean   @default(false)
+  specialty    String?
+   yearsOfExperience Int?
   
   user         User      @relation(fields: [userId], references: [id])
   products     Product[]
@@ -146,6 +148,7 @@ model Order {
   deliveryAddress String
   paymentStatus   PaymentStatus @default(PENDING)
   paymentMethod   PaymentMethod?
+  cancelReason    String?  
   
   user            User          @relation(fields: [userId], references: [id])
   chef            Chef          @relation(fields: [chefId], references: [id])

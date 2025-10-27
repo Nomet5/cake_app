@@ -1,23 +1,26 @@
 // src/app/admin/users/[id]/edit/page.js
-import { getUserById, updateUser } from '../../../../lib/actions/user.actions'
-import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import EditUserForm from '../../../Components/EditUserForm'
+import {
+  getUserById,
+  updateUser,
+} from "../../../../actions/admin/user.actions";
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import EditUserForm from "../../../Components/EditUserForm";
 
 export default async function EditUserPage(props) {
   // Ждем параметры (await для динамических маршрутов)
-  const params = await props.params
-  const id = parseInt(params.id)
-  
+  const params = await props.params;
+  const id = parseInt(params.id);
+
   // Получаем данные пользователя
-  const result = await getUserById(id)
+  const result = await getUserById(id);
 
   // Если пользователь не найден, показываем 404
   if (!result.success) {
-    notFound()
+    notFound();
   }
 
-  const { user } = result
+  const { user } = result;
 
   return (
     <div className="p-6">
@@ -33,7 +36,10 @@ export default async function EditUserPage(props) {
             <span className="text-gray-400">/</span>
           </li>
           <li>
-            <Link href="/admin/users" className="text-gray-500 hover:text-gray-700">
+            <Link
+              href="/admin/users"
+              className="text-gray-500 hover:text-gray-700"
+            >
               Пользователи
             </Link>
           </li>
@@ -41,7 +47,10 @@ export default async function EditUserPage(props) {
             <span className="text-gray-400">/</span>
           </li>
           <li>
-            <Link href={`/admin/users/${user.id}`} className="text-gray-500 hover:text-gray-700">
+            <Link
+              href={`/admin/users/${user.id}`}
+              className="text-gray-500 hover:text-gray-700"
+            >
               {user.firstName || user.email}
             </Link>
           </li>
@@ -71,5 +80,5 @@ export default async function EditUserPage(props) {
       {/* Форма редактирования */}
       <EditUserForm user={user} />
     </div>
-  )
+  );
 }

@@ -20,7 +20,7 @@ const Header = () => {
 
     return (
         <header className="sticky top-0 z-50 bg-bakery-50/95 backdrop-blur-md border-b border-bakery-200">
-            <div className="container mx-auto px-4">
+            <div className="container mx-auto px-4 pt-4 pb-4">
                 <div className="flex items-center justify-between h-16">
                     {/* Лого и бургер меню для мобильных */}
                     <div className="flex items-center gap-4">
@@ -34,16 +34,12 @@ const Header = () => {
 
                         {/* Логотип */}
                         <Link href="/" className="flex items-center gap-2" onClick={closeMobileMenu}>
-                            <div className="w-8 h-8 bg-gradient-to-br from-bakery-400 to-bakery-600 rounded-xl" />
-                            <span className="text-xl font-bold text-bakery-1150 font-display">BakeHub</span>
+                            <div> <img src='/images/categories/logo.jpg' className="w-26 h-20" /> </div>
                         </Link>
                     </div>
 
                     {/* Навигация для десктопа */}
                     <nav className="hidden md:flex items-center gap-8">
-                        <Link href="/" className="text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body">
-                            Главная
-                        </Link>
                         <Link href="/catalog" className="text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body">
                             Каталог
                         </Link>

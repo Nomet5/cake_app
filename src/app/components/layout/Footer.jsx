@@ -8,7 +8,7 @@ const Footer = () => {
                     <div className="lg:col-span-2">
                         <div className="flex items-center gap-2 mb-4">
                             <div className="w-8 h-8 bg-gradient-to-br from-bakery-400 to-bakery-600 rounded-xl" />
-                            <span className="text-xl font-bold font-display">BakeHub</span>
+                            <span className="text-xl font-bold font-display">ВкусноДом</span>
                         </div>
                         <p className="text-bakery-200 text-sm leading-relaxed max-w-md">
                             Платформа для заказа домашней еды и кондитерских изделий у локальных пекарей.
@@ -43,7 +43,7 @@ const Footer = () => {
                 {/* Нижняя часть */}
                 <div className="border-t border-bakery-1000 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
                     <div className="text-bakery-300 text-sm mb-4 md:mb-0">
-                        © 2025 BakeHub. Все права защищены.
+                        © 2025 ВкусноДом. Все права защищены.
                     </div>
                     <div className="flex gap-4">
                         <a href="#" className="text-bakery-300 hover:text-white transition-colors text-sm">Политика конфиденциальности</a>

@@ -6,7 +6,7 @@ import { FavoritesProvider } from './context/FavoritesContext'
 import Toast from './components/ui/Toast'
 
 export const metadata = {
-  title: 'BakeHub - Домашняя еда от локальных пекарей',
+  title: 'ВкусноДом - Домашняя еда от локальных пекарей',
   description: 'Заказывайте домашнюю выпечку, торты и десерты у проверенных пекарей вашего города',
 }
 

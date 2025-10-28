@@ -34,7 +34,7 @@ const Header = () => {
 
                         {/* Логотип */}
                         <Link href="/" className="flex items-center gap-2" onClick={closeMobileMenu}>
-                            <div> <img src='/images/categories/logo.jpg' className="w-26 h-20" /> </div>
+                            <div> <img src='/images/categories/logo.png' className="w-26 h-20" /> </div>
                         </Link>
                     </div>
 

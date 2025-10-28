@@ -7,7 +7,7 @@ const Footer = () => {
                     {/* Лого и описание */}
                     <div className="lg:col-span-2">
                         <div className="flex items-center gap-2 mb-4">
-                            <div className="w-8 h-8 bg-gradient-to-br from-bakery-400 to-bakery-600 rounded-xl" />
+                        
                             <span className="text-xl font-bold font-display">ВкусноДом</span>
                         </div>
                         <p className="text-bakery-200 text-sm leading-relaxed max-w-md">

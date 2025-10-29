@@ -1,11 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import Button from '../ui/Button'
-import Rating from '../ui/Rating'
-import { useCart } from '../../context/CartContext'
-import { useToast } from '../../context/ToastContext'
-import FadeIn from '../ui/FadeIn'
+import Button from '../common/Button'
+import Rating from '../common/Rating'
+import { useCart } from '../context/CartContext'
+import { useToast } from '../context/ToastContext'
+import FadeIn from '../common/FadeIn'
 
 const RecommendedProducts = () => {
     const { addToCart } = useCart()

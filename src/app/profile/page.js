@@ -4,8 +4,8 @@
 import { useState } from 'react'
 import Header from '../components/layout/Header'
 import Footer from '../components/layout/Footer'
-import FadeIn from '../components/ui/FadeIn'
-import Button from '../components/ui/Button'
+import FadeIn from '../components/common/FadeIn'
+import Button from '../components/common/Button'
 import Link from 'next/link'
 
 export default function ProfilePage() {

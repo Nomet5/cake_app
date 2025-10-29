@@ -5,8 +5,8 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Header from '../components/layout/Header'
 import Footer from '../components/layout/Footer'
-import FadeIn from '../components/ui/FadeIn'
-import Button from '../components/ui/Button'
+import FadeIn from '../components/common/FadeIn'
+import Button from '../components/common/Button'
 
 export default function RegisterPage() {
     const [formData, setFormData] = useState({

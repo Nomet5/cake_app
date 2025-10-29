@@ -1,9 +1,9 @@
 // src/app/layout.js
 import './globals.css'
-import { CartProvider } from './context/CartContext'
-import { ToastProvider } from './context/ToastContext'
-import { FavoritesProvider } from './context/FavoritesContext'
-import Toast from './components/ui/Toast'
+import { CartProvider } from './components/context/CartContext'
+import { ToastProvider } from './components/context/ToastContext'
+import { FavoritesProvider } from './components/context/FavoritesContext'
+import Toast from './components/common/Toast'
 
 export const metadata = {
   title: 'ВкусноДом - Домашняя еда от локальных пекарей',

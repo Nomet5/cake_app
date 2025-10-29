@@ -1,7 +1,7 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { useToast } from '../../context/ToastContext'
+import { useToast } from '../context/ToastContext'
 
 const Toast = () => {
     const { toasts, removeToast } = useToast()

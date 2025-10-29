@@ -1,6 +1,6 @@
 import Link from 'next/link'
-import Button from '../ui/Button'
-import Rating from '../ui/Rating'
+import Button from '../common/Button'
+import Rating from '../common/Rating'
 
 const PopularBakers = () => {
     const bakers = [

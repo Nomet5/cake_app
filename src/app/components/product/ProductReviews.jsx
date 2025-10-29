@@ -1,10 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import Button from '../ui/Button'
-import ReviewCard from '../ui/ReviewCard'
-import ReviewForm from '../ui/ReviewForm'
-import StarRating from '../ui/StarRating'
+import Button from '../common/Button'
+import ReviewCard from './ReviewCard'
+import ReviewForm from './ReviewForm'
+import StarRating from '../common/StarRating'
 
 const ProductReviews = ({ productId, productName }) => {
     const [showReviewForm, setShowReviewForm] = useState(false)

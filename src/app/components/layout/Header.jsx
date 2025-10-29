@@ -2,10 +2,10 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import Button from '../ui/Button'
-import SearchBar from '../ui/SearchBar'
-import { useCart } from '../../context/CartContext'
-import { useFavorites } from '../../context/FavoritesContext'
+import Button from '../common/Button'
+import SearchBar from '../catalog/SearchBar'
+import { useCart } from '../context/CartContext'
+import { useFavorites } from '../context/FavoritesContext'
 
 const Header = () => {
     const [isSearchOpen, setIsSearchOpen] = useState(false)

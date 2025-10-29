@@ -1,4 +1,4 @@
-import StarRating from './StarRating'
+import StarRating from '../common/StarRating'
 
 const ReviewCard = ({ review }) => {
     const formatDate = (dateString) => {

@@ -1,8 +1,8 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import FadeIn from '../ui/FadeIn'
-import HoverScale from '../ui/HoverScale'
+import FadeIn from '../common/FadeIn'
+import HoverScale from '../common/HoverScale'
 import Image from 'next/image'
 
 const Categories = () => {

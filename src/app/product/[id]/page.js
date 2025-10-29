@@ -3,11 +3,11 @@
 import { useState } from 'react'
 import Header from '../../components/layout/Header'
 import Footer from '../../components/layout/Footer'
-import Button from '../../components/ui/Button'
-import Rating from '../../components/ui/Rating'
-import ProductReviews from '../../components/sections/ProductReviews'
-import { useCart } from '../../context/CartContext'
-import { useToast } from '../../context/ToastContext'
+import Button from '../../components/common/Button'
+import Rating from '../../components/common/Rating'
+import ProductReviews from '../../components/product/ProductReviews'
+import { useCart } from '../../components/context/CartContext'
+import { useToast } from '../../components/context/ToastContext'
 import Link from 'next/link'
 
 // Временные данные товара

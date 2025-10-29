@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import Button from './Button'
-import StarRating from './StarRating'
+import Button from '../common/Button'
+import StarRating from '../common/StarRating'
 
 const ReviewForm = ({ productId, onSubmit, onCancel }) => {
     const [rating, setRating] = useState(0)

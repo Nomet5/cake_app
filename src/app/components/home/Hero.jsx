@@ -4,8 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import Button from '../ui/Button'
-import FadeIn from '../ui/FadeIn'
+import Button from '../common/Button'
+import FadeIn from '../common/FadeIn'
 
 const Hero = () => {
     const [searchQuery, setSearchQuery] = useState('')

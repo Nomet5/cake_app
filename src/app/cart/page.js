@@ -2,9 +2,9 @@
 
 import Header from '../components/layout/Header'
 import Footer from '../components/layout/Footer'
-import Button from '../components/ui/Button'
+import Button from '../components/common/Button'
 import Link from 'next/link'
-import { useCart } from '../context/CartContext'
+import { useCart } from '../components/context/CartContext'
 
 const CartPage = () => {
     const {

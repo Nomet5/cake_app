@@ -5,10 +5,10 @@ import { useState, useMemo } from 'react'
 import Header from '../components/layout/Header'
 import Footer from '../components/layout/Footer'
 import Link from 'next/link'
-import { useFavorites } from '../context/FavoritesContext'
-import ProductCard from '../components/ui/ProductCard'
-import FadeIn from '../components/ui/FadeIn'
-import TransitionWrapper from '../components/ui/TransitionWrapper'
+import { useFavorites } from '../components/context/FavoritesContext'
+import ProductCard from '../components/product/ProductCard'
+import FadeIn from '../components/common/FadeIn'
+import TransitionWrapper from '../components/common/TransitionWrapper'
 
 // Используем те же mock данные что и в catalog
 const mockProducts = [

@@ -2,13 +2,13 @@
 'use client'
 
 import Link from 'next/link'
-import Button from './Button'
-import Rating from './Rating'
-import { useCart } from '../../context/CartContext'
-import { useToast } from '../../context/ToastContext'
-import { useFavorites } from '../../context/FavoritesContext' // ← ДОБАВЛЕНО
-import FadeIn from './FadeIn'
-import HoverScale from './HoverScale'
+import Button from '../common/Button'
+import Rating from '../common/Rating'
+import { useCart } from '../context/CartContext'
+import { useToast } from '../context/ToastContext'
+import { useFavorites } from '../context/FavoritesContext' // ← ДОБАВЛЕНО
+import FadeIn from '../common/FadeIn'
+import HoverScale from '../common/HoverScale'
 
 const ProductCard = ({ product, index = 0 }) => {
     const { addToCart } = useCart()

@@ -1,4 +1,4 @@
-// lib/actions/admin/dashboard.actions.js
+// lib/actions/admin/dashboard.actions.js - ПОЛНАЯ ВЕРСИЯ СО ВСЕМИ ФУНКЦИЯМИ
 'use server'
 
 import { PrismaClient } from '@prisma/client'
@@ -6,10 +6,8 @@ import { revalidatePath } from 'next/cache'
 
 const prisma = new PrismaClient()
 
-
 // Основная статистика дашборда
 export async function getAdminDashboardStats() {
-
   try {
     // Основные счетчики
     const [
@@ -120,6 +118,93 @@ export async function getAdminDashboardStats() {
       }
     })
 
+    // === НОВЫЕ ФУНКЦИИ ДЛЯ ГРАФИКОВ ===
+
+    // Выручка по дням за последние 30 дней
+    const revenueByDay = await prisma.order.groupBy({
+      by: ['createdAt'],
+      where: {
+        createdAt: {
+          gte: new Date(new Date().setDate(new Date().getDate() - 30))
+        },
+        paymentStatus: 'PAID'
+      },
+      _sum: {
+        totalAmount: true
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    })
+
+    // Заказы по дням за последние 30 дней
+    const ordersByDay = await prisma.order.groupBy({
+      by: ['createdAt'],
+      where: {
+        createdAt: {
+          gte: new Date(new Date().setDate(new Date().getDate() - 30))
+        }
+      },
+      _count: {
+        id: true
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    })
+
+    // Статистика по пользователям за последние 30 дней
+    const usersByDay = await prisma.user.groupBy({
+      by: ['createdAt'],
+      where: {
+        createdAt: {
+          gte: new Date(new Date().setDate(new Date().getDate() - 30))
+        }
+      },
+      _count: {
+        id: true
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    })
+
+    // Топ товаров по выручке
+    const topProductsByRevenue = await prisma.orderItem.groupBy({
+      by: ['productId'],
+      _sum: {
+        totalPrice: true,
+        quantity: true
+      },
+      orderBy: {
+        _sum: {
+          totalPrice: 'desc'
+        }
+      },
+      take: 10
+    })
+
+    // Детальная информация о топ товарах
+    const topProductsDetails = await prisma.product.findMany({
+      where: {
+        id: {
+          in: topProductsByRevenue.map(item => item.productId)
+        }
+      },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        category: {
+          select: {
+            name: true
+          }
+        }
+      }
+    })
+
+    // === КОНЕЦ НОВЫХ ФУНКЦИЙ ===
+
     // Последние пользователи - ИСПРАВЛЕННЫЙ ЗАПРОС (только firstName)
     const recentUsers = await prisma.user.findMany({
       take: 5,
@@ -127,7 +212,7 @@ export async function getAdminDashboardStats() {
       select: {
         id: true,
         email: true,
-        firstName: true, // Только firstName, без lastName
+        firstName: true,
         phone: true,
         createdAt: true,
         _count: {
@@ -152,7 +237,7 @@ export async function getAdminDashboardStats() {
         createdAt: true,
         user: {
           select: {
-            firstName: true, // Только firstName
+            firstName: true,
             email: true
           }
         },
@@ -161,7 +246,7 @@ export async function getAdminDashboardStats() {
             businessName: true,
             user: {
               select: {
-                firstName: true // Только firstName
+                firstName: true
               }
             }
           }
@@ -231,7 +316,7 @@ export async function getAdminDashboardStats() {
         isVerified: true,
         user: {
           select: {
-            firstName: true, // Только firstName
+            firstName: true,
             email: true
           }
         },
@@ -249,7 +334,7 @@ export async function getAdminDashboardStats() {
       }
     })
 
-    // Топ товары
+    // Топ товары по количеству заказов
     const topProducts = await prisma.product.findMany({
       take: 5,
       select: {
@@ -311,6 +396,33 @@ export async function getAdminDashboardStats() {
       ? Number((((todayRevenue._sum.totalAmount || 0) - (yesterdayRevenue._sum.totalAmount || 0)) / (yesterdayRevenue._sum.totalAmount || 0) * 100).toFixed(1))
       : (todayRevenue._sum.totalAmount || 0) > 0 ? 100 : 0
 
+    // Подготовка данных для графиков
+    const chartData = {
+      revenueByDay: revenueByDay.map(item => ({
+        date: item.createdAt.toISOString().split('T')[0],
+        revenue: item._sum.totalAmount || 0
+      })),
+      ordersByDay: ordersByDay.map(item => ({
+        date: item.createdAt.toISOString().split('T')[0],
+        orders: item._count.id
+      })),
+      usersByDay: usersByDay.map(item => ({
+        date: item.createdAt.toISOString().split('T')[0],
+        users: item._count.id
+      })),
+      topProductsByRevenue: topProductsByRevenue.map(item => {
+        const productDetails = topProductsDetails.find(p => p.id === item.productId)
+        return {
+          productId: item.productId,
+          productName: productDetails?.name || 'Неизвестный товар',
+          category: productDetails?.category?.name || 'Без категории',
+          totalRevenue: item._sum.totalPrice || 0,
+          totalQuantity: item._sum.quantity || 0,
+          price: productDetails?.price || 0
+        }
+      }).sort((a, b) => b.totalRevenue - a.totalRevenue)
+    }
+
     return {
       success: true,
       stats: {
@@ -333,8 +445,8 @@ export async function getAdminDashboardStats() {
           yesterday: yesterdayOrders,
           weekly: weeklyOrders,
           monthly: monthlyOrders,
-          ordersGrowth: ordersGrowth, // Теперь это число, а не строка
-          revenueGrowth: revenueGrowth // Теперь это число, а не строка
+          ordersGrowth: ordersGrowth,
+          revenueGrowth: revenueGrowth
         },
         // Финансовая статистика
         financial: {
@@ -349,6 +461,8 @@ export async function getAdminDashboardStats() {
         // Статусы
         ordersByStatus: ordersStatusObj,
         paymentsByStatus: paymentsStatusObj,
+        // Данные для графиков
+        charts: chartData,
         // Последние данные
         recent: {
           users: recentUsers,
@@ -407,6 +521,224 @@ export async function getSimpleDashboardStats() {
     }
   }
 }
+
+// === НОВЫЕ ФУНКЦИИ ДЛЯ ГРАФИКОВ ===
+
+// Получить детальную статистику по выручке
+export async function getRevenueStats(timeRange = '30d') {
+  try {
+    let dateFilter = {}
+    const now = new Date()
+    
+    switch (timeRange) {
+      case '7d':
+        dateFilter = { gte: new Date(now.setDate(now.getDate() - 7)) }
+        break
+      case '30d':
+        dateFilter = { gte: new Date(now.setDate(now.getDate() - 30)) }
+        break
+      case '90d':
+        dateFilter = { gte: new Date(now.setDate(now.getDate() - 90)) }
+        break
+      default:
+        dateFilter = { gte: new Date(now.setDate(now.getDate() - 30)) }
+    }
+
+    const revenueStats = await prisma.order.groupBy({
+      by: ['createdAt'],
+      where: {
+        createdAt: dateFilter,
+        paymentStatus: 'PAID'
+      },
+      _sum: {
+        totalAmount: true
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    })
+
+    return {
+      success: true,
+      data: revenueStats.map(item => ({
+        date: item.createdAt.toISOString().split('T')[0],
+        revenue: item._sum.totalAmount || 0
+      }))
+    }
+  } catch (error) {
+    console.error('Error fetching revenue stats:', error)
+    return {
+      success: false,
+      error: 'Ошибка при получении статистики выручки'
+    }
+  }
+}
+
+// Получить статистику по заказам
+export async function getOrdersStats(timeRange = '30d') {
+  try {
+    let dateFilter = {}
+    const now = new Date()
+    
+    switch (timeRange) {
+      case '7d':
+        dateFilter = { gte: new Date(now.setDate(now.getDate() - 7)) }
+        break
+      case '30d':
+        dateFilter = { gte: new Date(now.setDate(now.getDate() - 30)) }
+        break
+      case '90d':
+        dateFilter = { gte: new Date(now.setDate(now.getDate() - 90)) }
+        break
+      default:
+        dateFilter = { gte: new Date(now.setDate(now.getDate() - 30)) }
+    }
+
+    const ordersStats = await prisma.order.groupBy({
+      by: ['createdAt'],
+      where: {
+        createdAt: dateFilter
+      },
+      _count: {
+        id: true
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    })
+
+    return {
+      success: true,
+      data: ordersStats.map(item => ({
+        date: item.createdAt.toISOString().split('T')[0],
+        orders: item._count.id
+      }))
+    }
+  } catch (error) {
+    console.error('Error fetching orders stats:', error)
+    return {
+      success: false,
+      error: 'Ошибка при получении статистики заказов'
+    }
+  }
+}
+
+// Получить статистику по пользователям
+export async function getUsersStats(timeRange = '30d') {
+  try {
+    let dateFilter = {}
+    const now = new Date()
+    
+    switch (timeRange) {
+      case '7d':
+        dateFilter = { gte: new Date(now.setDate(now.getDate() - 7)) }
+        break
+      case '30d':
+        dateFilter = { gte: new Date(now.setDate(now.getDate() - 30)) }
+        break
+      case '90d':
+        dateFilter = { gte: new Date(now.setDate(now.getDate() - 90)) }
+        break
+      default:
+        dateFilter = { gte: new Date(now.setDate(now.getDate() - 30)) }
+    }
+
+    const usersStats = await prisma.user.groupBy({
+      by: ['createdAt'],
+      where: {
+        createdAt: dateFilter
+      },
+      _count: {
+        id: true
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    })
+
+    return {
+      success: true,
+      data: usersStats.map(item => ({
+        date: item.createdAt.toISOString().split('T')[0],
+        users: item._count.id
+      }))
+    }
+  } catch (error) {
+    console.error('Error fetching users stats:', error)
+    return {
+      success: false,
+      error: 'Ошибка при получении статистики пользователей'
+    }
+  }
+}
+
+// Получить топ товаров по выручке
+export async function getTopProductsByRevenue(limit = 10) {
+  try {
+    const topProducts = await prisma.orderItem.groupBy({
+      by: ['productId'],
+      _sum: {
+        totalPrice: true,
+        quantity: true
+      },
+      orderBy: {
+        _sum: {
+          totalPrice: 'desc'
+        }
+      },
+      take: limit
+    })
+
+    const productDetails = await prisma.product.findMany({
+      where: {
+        id: {
+          in: topProducts.map(item => item.productId)
+        }
+      },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        category: {
+          select: {
+            name: true
+          }
+        },
+        chef: {
+          select: {
+            businessName: true
+          }
+        }
+      }
+    })
+
+    const result = topProducts.map(item => {
+      const product = productDetails.find(p => p.id === item.productId)
+      return {
+        productId: item.productId,
+        productName: product?.name || 'Неизвестный товар',
+        category: product?.category?.name || 'Без категории',
+        chef: product?.chef?.businessName || 'Неизвестный повар',
+        totalRevenue: item._sum.totalPrice || 0,
+        totalQuantity: item._sum.quantity || 0,
+        price: product?.price || 0
+      }
+    })
+
+    return {
+      success: true,
+      data: result
+    }
+  } catch (error) {
+    console.error('Error fetching top products:', error)
+    return {
+      success: false,
+      error: 'Ошибка при получении топа товаров'
+    }
+  }
+}
+
+// === СУЩЕСТВУЮЩИЕ ФУНКЦИИ ===
 
 // Быстрые действия
 export async function updateOrderStatus(orderId, status) {

@@ -30,6 +30,7 @@ model User {
   cartItems     CartItem[]
   sessions      UserSession[]
   reviews     Review[]
+  notifications Notification[]
   
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -216,6 +217,7 @@ model Review {
   isApproved Boolean @default(true)
   productId Int? 
   
+  
   order     Order    @relation(fields: [orderId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
   chef      Chef     @relation(fields: [chefId], references: [id])
@@ -236,7 +238,51 @@ model UserSession {
   @@map("user_sessions")
 }
 
+// Модель для уведомлений
+model Notification {
+  id          Int       @id @default(autoincrement())
+  type        NotificationType
+  priority    NotificationPriority
+  title       String
+  message     String
+  data        Json?     
+  isRead      Boolean   @default(false)
+  actionUrl   String?   
+  userId      Int?      
+  expiresAt   DateTime? 
+  
+  // Связи
+  user        User?     @relation(fields: [userId], references: [id])
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("notifications")
+  @@index([userId, isRead])
+  @@index([type, createdAt])
+}
+
+
+
+
 // ==================== ОБЯЗАТЕЛЬНЫЕ ENUMS ====================
+
+enum NotificationType {
+  ORDER
+  USER
+  PAYMENT
+  REVIEW
+  SYSTEM
+  ANALYTICS
+  PROMOTION
+}
+
+enum NotificationPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
 
 enum OrderStatus {
   PENDING

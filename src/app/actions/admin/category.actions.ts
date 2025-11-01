@@ -1,24 +1,22 @@
-// lib/actions/category.actions.ts
 'use server'
 
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, NotificationType, NotificationPriority } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
+import { createNotification } from './notification.actions'
 
 const prisma = new PrismaClient()
 
-// CREATE - Создание категории
+// CREATE - Создание категории с уведомлением
 export async function createCategory(formData: FormData) {
   try {
     const name = formData.get("name") as string
     const sortOrder = formData.get("sortOrder") ? parseInt(formData.get("sortOrder") as string) : 0
     const isActive = formData.get("isActive") === 'true'
 
-    // Валидация данных
     if (!name) {
       return { error: 'Название категории обязательно' }
     }
 
-    // Проверяем уникальность названия
     const existingCategory = await prisma.category.findFirst({
       where: { 
         name: name
@@ -37,6 +35,20 @@ export async function createCategory(formData: FormData) {
       }
     })
 
+    // СОЗДАЕМ УВЕДОМЛЕНИЕ для администраторов
+    await createNotification({
+      type: NotificationType.SYSTEM,
+      priority: NotificationPriority.MEDIUM,
+      title: 'Новая категория создана',
+      message: `Категория "${name}" была успешно создана`,
+      data: { 
+        categoryId: category.id, 
+        categoryName: name,
+        action: 'CATEGORY_CREATED'
+      },
+      actionUrl: `/admin/categories/${category.id}`
+    })
+
     revalidatePath('/admin/categories')
     revalidatePath('/products')
     return { success: true, category }
@@ -46,6 +58,201 @@ export async function createCategory(formData: FormData) {
   }
 }
 
+// UPDATE - Обновление категории с уведомлением
+export async function updateCategory(id: number, formData: FormData) {
+  try {
+    const name = formData.get("name") as string
+    const sortOrder = formData.get("sortOrder") ? parseInt(formData.get("sortOrder") as string) : undefined
+    const isActive = formData.get("isActive") ? formData.get("isActive") === 'true' : undefined
+
+    if (!name) {
+      return { error: 'Название категории обязательно' }
+    }
+
+    const existingCategory = await prisma.category.findUnique({
+      where: { id }
+    })
+
+    if (!existingCategory) {
+      return { error: 'Категория не найдена' }
+    }
+
+    if (name && name !== existingCategory.name) {
+      const duplicateCategory = await prisma.category.findFirst({
+        where: { 
+          name: name,
+          id: { not: id }
+        }
+      })
+
+      if (duplicateCategory) {
+        return { error: 'Категория с таким названием уже существует' }
+      }
+    }
+
+    const updateData = {
+      ...(name && { name }),
+      ...(sortOrder !== undefined && { sortOrder }),
+      ...(isActive !== undefined && { isActive })
+    }
+
+    const category = await prisma.category.update({
+      where: { id },
+      data: updateData
+    })
+
+    // СОЗДАЕМ УВЕДОМЛЕНИЕ об обновлении
+    await createNotification({
+      type: NotificationType.SYSTEM,
+      priority: NotificationPriority.MEDIUM,
+      title: 'Категория обновлена',
+      message: `Категория "${existingCategory.name}" была обновлена`,
+      data: { 
+        categoryId: category.id, 
+        categoryName: category.name,
+        action: 'CATEGORY_UPDATED'
+      },
+      actionUrl: `/admin/categories/${category.id}`
+    })
+
+    revalidatePath('/admin/categories')
+    revalidatePath(`/admin/categories/${id}`)
+    revalidatePath('/products')
+    return { success: true, category }
+  } catch (error) {
+    console.error('Error updating category:', error)
+    return { error: 'Ошибка при обновлении категории' }
+  }
+}
+
+// TOGGLE ACTIVE - Переключение активности категории с уведомлением
+export async function toggleCategoryActive(id: number) {
+  try {
+    const category = await prisma.category.findUnique({
+      where: { id }
+    })
+
+    if (!category) {
+      return { error: 'Категория не найдена' }
+    }
+
+    const updatedCategory = await prisma.category.update({
+      where: { id },
+      data: {
+        isActive: !category.isActive
+      }
+    })
+
+    // СОЗДАЕМ УВЕДОМЛЕНИЕ об изменении статуса
+    await createNotification({
+      type: NotificationType.SYSTEM,
+      priority: NotificationPriority.MEDIUM,
+      title: 'Статус категории изменен',
+      message: `Категория "${category.name}" ${updatedCategory.isActive ? 'активирована' : 'деактивирована'}`,
+      data: { 
+        categoryId: category.id, 
+        categoryName: category.name,
+        action: 'CATEGORY_STATUS_CHANGED',
+        newStatus: updatedCategory.isActive ? 'ACTIVE' : 'INACTIVE'
+      },
+      actionUrl: `/admin/categories/${category.id}`
+    })
+
+    revalidatePath('/admin/categories')
+    revalidatePath('/products')
+    return { success: true, category: updatedCategory }
+  } catch (error) {
+    console.error('Error toggling category active:', error)
+    return { error: 'Ошибка при изменении статуса категории' }
+  }
+}
+
+// DELETE - Удаление категории с уведомлением
+export async function deleteCategory(id: number) {
+  try {
+    const category = await prisma.category.findUnique({
+      where: { id },
+      include: {
+        products: true
+      }
+    })
+
+    if (!category) {
+      return { error: 'Категория не найдена' }
+    }
+
+    const hasProducts = category.products.length > 0
+
+    if (hasProducts) {
+      return { error: 'Нельзя удалить категорию с товарами. Сначала переместите или удалите товары.' }
+    }
+
+    await prisma.category.delete({
+      where: { id }
+    })
+
+    // СОЗДАЕМ УВЕДОМЛЕНИЕ об удалении
+    await createNotification({
+      type: NotificationType.SYSTEM,
+      priority: NotificationPriority.MEDIUM,
+      title: 'Категория удалена',
+      message: `Категория "${category.name}" была удалена из системы`,
+      data: { 
+        categoryId: id, 
+        categoryName: category.name,
+        action: 'CATEGORY_DELETED'
+      }
+    })
+
+    revalidatePath('/admin/categories')
+    revalidatePath('/products')
+    return { success: true, message: 'Категория успешно удалена' }
+  } catch (error) {
+    console.error('Error deleting category:', error)
+    return { error: 'Ошибка при удалении категории' }
+  }
+}
+
+// BULK UPDATE CATEGORIES - Массовое обновление категорий с уведомлением
+export async function bulkUpdateCategories(categoryIds: number[], isActive: boolean) {
+  try {
+    const result = await prisma.category.updateMany({
+      where: {
+        id: {
+          in: categoryIds
+        }
+      },
+      data: {
+        isActive
+      }
+    })
+
+    // СОЗДАЕМ УВЕДОМЛЕНИЕ о массовом обновлении
+    if (result.count > 0) {
+      await createNotification({
+        type: NotificationType.SYSTEM,
+        priority: NotificationPriority.MEDIUM,
+        title: 'Массовое обновление категорий',
+        message: `${result.count} категорий ${isActive ? 'активированы' : 'деактивированы'}`,
+        data: { 
+          categoryIds, 
+          updatedCount: result.count,
+          action: 'CATEGORY_BULK_UPDATE',
+          newStatus: isActive ? 'ACTIVE' : 'INACTIVE'
+        }
+      })
+    }
+
+    revalidatePath('/admin/categories')
+    revalidatePath('/products')
+    return { success: true, updatedCount: result.count }
+  } catch (error) {
+    console.error('Error bulk updating categories:', error)
+    return { error: 'Ошибка при массовом обновлении категорий' }
+  }
+}
+
+// Остальные функции остаются без изменений
 // READ (List) - Получение списка категорий
 export async function getCategories() {
   try {
@@ -93,12 +300,9 @@ export async function getActiveCategories() {
   }
 }
 
-
-
 // READ (Single) - Получение категории по ID
 export async function getCategoryById(id: number) {
   try {
-    // Добавляем проверку на валидность ID
     if (!id || isNaN(id)) {
       return { error: 'Неверный ID категории' }
     }
@@ -147,89 +351,6 @@ export async function getCategoryById(id: number) {
   }
 }
 
-// UPDATE - Обновление категории
-export async function updateCategory(id: number, formData: FormData) {
-  try {
-    const name = formData.get("name") as string
-    const sortOrder = formData.get("sortOrder") ? parseInt(formData.get("sortOrder") as string) : undefined
-    const isActive = formData.get("isActive") ? formData.get("isActive") === 'true' : undefined
-
-    // Валидация
-    if (!name) {
-      return { error: 'Название категории обязательно' }
-    }
-
-    // Проверяем существование категории
-    const existingCategory = await prisma.category.findUnique({
-      where: { id }
-    })
-
-    if (!existingCategory) {
-      return { error: 'Категория не найдена' }
-    }
-
-    // Если меняется название, проверяем уникальность
-    if (name && name !== existingCategory.name) {
-      const duplicateCategory = await prisma.category.findFirst({
-        where: { 
-          name: name,
-          id: { not: id }
-        }
-      })
-
-      if (duplicateCategory) {
-        return { error: 'Категория с таким названием уже существует' }
-      }
-    }
-
-    const updateData = {
-      ...(name && { name }),
-      ...(sortOrder !== undefined && { sortOrder }),
-      ...(isActive !== undefined && { isActive })
-    }
-
-    const category = await prisma.category.update({
-      where: { id },
-      data: updateData
-    })
-
-    revalidatePath('/admin/categories')
-    revalidatePath(`/admin/categories/${id}`)
-    revalidatePath('/products')
-    return { success: true, category }
-  } catch (error) {
-    console.error('Error updating category:', error)
-    return { error: 'Ошибка при обновлении категории' }
-  }
-}
-
-// TOGGLE ACTIVE - Переключение активности категории
-export async function toggleCategoryActive(id: number) {
-  try {
-    const category = await prisma.category.findUnique({
-      where: { id }
-    })
-
-    if (!category) {
-      return { error: 'Категория не найдена' }
-    }
-
-    const updatedCategory = await prisma.category.update({
-      where: { id },
-      data: {
-        isActive: !category.isActive
-      }
-    })
-
-    revalidatePath('/admin/categories')
-    revalidatePath('/products')
-    return { success: true, category: updatedCategory }
-  } catch (error) {
-    console.error('Error toggling category active:', error)
-    return { error: 'Ошибка при изменении статуса категории' }
-  }
-}
-
 // UPDATE STATUS - Обновление статуса категории
 export async function updateCategoryStatus(id: number, isActive: boolean) {
   try {
@@ -265,42 +386,6 @@ export async function updateCategorySortOrder(id: number, sortOrder: number) {
   } catch (error) {
     console.error('Error updating category sort order:', error)
     return { error: 'Ошибка при обновлении порядка сортировки' }
-  }
-}
-
-// DELETE - Удаление категории
-export async function deleteCategory(id: number) {
-  try {
-    // Проверяем существует ли категория
-    const category = await prisma.category.findUnique({
-      where: { id },
-      include: {
-        products: true
-      }
-    })
-
-    if (!category) {
-      return { error: 'Категория не найдена' }
-    }
-
-    // Нельзя удалить категорию с товарами
-    const hasProducts = category.products.length > 0
-
-    if (hasProducts) {
-      return { error: 'Нельзя удалить категорию с товарами. Сначала переместите или удалите товары.' }
-    }
-
-    // Удаляем категорию
-    await prisma.category.delete({
-      where: { id }
-    })
-
-    revalidatePath('/admin/categories')
-    revalidatePath('/products')
-    return { success: true, message: 'Категория успешно удалена' }
-  } catch (error) {
-    console.error('Error deleting category:', error)
-    return { error: 'Ошибка при удалении категории' }
   }
 }
 
@@ -408,7 +493,6 @@ export async function getCategoryStats() {
       })
     ])
 
-    // Получаем среднее количество продуктов через отдельный запрос
     const categoriesWithCounts = await prisma.category.findMany({
       include: {
         _count: {
@@ -438,29 +522,6 @@ export async function getCategoryStats() {
       withProducts: 0,
       averageProducts: 0
     }
-  }
-}
-
-// BULK UPDATE CATEGORIES - Массовое обновление категорий
-export async function bulkUpdateCategories(categoryIds: number[], isActive: boolean) {
-  try {
-    const result = await prisma.category.updateMany({
-      where: {
-        id: {
-          in: categoryIds
-        }
-      },
-      data: {
-        isActive
-      }
-    })
-
-    revalidatePath('/admin/categories')
-    revalidatePath('/products')
-    return { success: true, updatedCount: result.count }
-  } catch (error) {
-    console.error('Error bulk updating categories:', error)
-    return { error: 'Ошибка при массовом обновлении категорий' }
   }
 }
 

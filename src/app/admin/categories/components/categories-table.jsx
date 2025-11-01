@@ -1,77 +1,91 @@
-'use client'
+'use client';
 
-import Link from 'next/link'
-import { useState } from 'react'
+import Link from 'next/link';
+import { useState } from 'react';
+import CategoryStatus from './category-status';
+import CategoryActions from './category-actions';
 
-export default function CategoriesTable({ categories }) {
-  const [selectedCategories, setSelectedCategories] = useState([])
+const TableRow = ({ category, index }) => {
+  const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <div className="bg-white rounded-lg shadow">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+    <tr 
+      className={`
+        transition-all duration-300 border-b border-gray-100
+        ${isHovered ? 'bg-blue-50 scale-[1.02]' : 'bg-white'}
+        animate-fade-in stagger-${(index % 4) + 1}
+      `}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <td className="px-6 py-4 whitespace-nowrap">
+        <Link 
+          href={`/admin/categories/${category.id}`}
+          className="text-blue-600 hover:text-blue-900 font-medium transition-colors duration-300 hover-lift inline-block"
+        >
+          {category.name}
+        </Link>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <CategoryStatus isActive={category.isActive} />
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <span className="inline-flex items-center justify-center w-8 h-8 bg-gray-100 rounded-full text-sm font-medium transition-all duration-300 hover:bg-blue-100 hover:text-blue-600">
+          {category.sortOrder}
+        </span>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="flex items-center">
+          <span className="text-sm font-medium text-gray-900">
+            {category._count?.products || 0}
+          </span>
+          {category._count?.products > 0 && (
+            <span className="ml-2 w-2 h-2 bg-green-400 rounded-full animate-ping-slow"></span>
+          )}
+        </div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+        <CategoryActions category={category} />
+      </td>
+    </tr>
+  );
+};
+
+export default function CategoriesTable({ categories }) {
+  return (
+    <div className="overflow-x-auto custom-scrollbar">
+      <table className="w-full">
+        <thead className="bg-gradient-to-r from-gray-50 to-blue-50">
+          <tr className="animate-slide-in-down">
+            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Название
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Количество товаров
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Статус
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Порядок
+            </th>
+            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Товары
+            </th>
+            <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Действия
             </th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {categories.map((category) => (
-            <tr key={category.id}>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 h-10 w-10">
-                    {category.image && (
-                      <img className="h-10 w-10 rounded-full" src={category.image} alt="" />
-                    )}
-                  </div>
-                  <div className="ml-4">
-                    <div className="text-sm font-medium text-gray-900">
-                      {category.name}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {category.description}
-                    </div>
-                  </div>
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {category.productsCount || 0}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                  ${category.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                  {category.status === 'active' ? 'Активна' : 'Неактивна'}
-                </span>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                <Link 
-                  href={`/admin/categories/${category.id}`}
-                  className="text-blue-600 hover:text-blue-900"
-                >
-                  Просмотр
-                </Link>
-                <Link 
-                  href={`/admin/categories/${category.id}/edit`}
-                  className="text-indigo-600 hover:text-indigo-900"
-                >
-                  Редактировать
-                </Link>
-              </td>
-            </tr>
+        <tbody className="divide-y divide-gray-100">
+          {categories.map((category, index) => (
+            <TableRow key={category.id} category={category} index={index} />
           ))}
         </tbody>
       </table>
+      
+      {categories.length === 0 && (
+        <div className="text-center py-12 animate-bounce-slow">
+          <div className="text-gray-400 text-lg">Категории не найдены</div>
+        </div>
+      )}
     </div>
-  )
+  );
 }

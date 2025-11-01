@@ -3,6 +3,12 @@
 
 import { PrismaClient } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
+import { 
+  createNewOrderNotification, 
+  createOrderStatusNotification, 
+  createPaymentNotification,
+  createSystemNotification 
+} from './notification.actions'
 
 const prisma = new PrismaClient()
 
@@ -139,12 +145,20 @@ export async function createOrder(formData: FormData) {
       }
     })
 
+    // Создаем уведомление о новом заказе
+    await createNewOrderNotification(order)
+
     revalidatePath('/admin/orders')
     revalidatePath(`/admin/users/${userId}`)
     revalidatePath(`/admin/chefs/${chefId}`)
     return { success: true, order }
   } catch (error) {
     console.error('Error creating order:', error)
+    await createSystemNotification(
+      'Ошибка создания заказа',
+      `Произошла ошибка при создании заказа: ${error}`,
+      'HIGH'
+    )
     return { error: 'Ошибка при создании заказа' }
   }
 }
@@ -157,7 +171,13 @@ export async function deleteOrder(id: number) {
       where: { id },
       include: {
         items: true,
-        reviews: true
+        reviews: true,
+        user: {
+          select: {
+            firstName: true,
+            email: true
+          }
+        }
       }
     })
 
@@ -183,6 +203,13 @@ export async function deleteOrder(id: number) {
     await prisma.order.delete({
       where: { id }
     })
+
+    // Создаем системное уведомление об удалении заказа
+    await createSystemNotification(
+      'Заказ удален',
+      `Заказ #${order.orderNumber} от пользователя ${order.user.firstName} был удален`,
+      'MEDIUM'
+    )
 
     revalidatePath('/admin/orders')
     revalidatePath('/admin/dashboard')
@@ -269,6 +296,23 @@ export async function updateOrder(id: number, formData: OrderFormData) {
       return { error: 'Неверный статус оплаты' }
     }
 
+    // Получаем текущий заказ для сравнения статусов
+    const currentOrder = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            firstName: true,
+            email: true
+          }
+        }
+      }
+    })
+
+    if (!currentOrder) {
+      return { error: 'Заказ не найден' }
+    }
+
     const updateData = {
       ...(status && { status: status as any }),
       ...(paymentStatus && { paymentStatus: paymentStatus as any }),
@@ -296,6 +340,15 @@ export async function updateOrder(id: number, formData: OrderFormData) {
       }
     })
 
+    // Создаем уведомления об изменении статусов
+    if (status && status !== currentOrder.status) {
+      await createOrderStatusNotification(order, currentOrder.status, status)
+    }
+
+    if (paymentStatus && paymentStatus !== currentOrder.paymentStatus) {
+      await createPaymentNotification(order, paymentStatus)
+    }
+
     revalidatePath('/admin/orders')
     revalidatePath(`/admin/orders/${id}`)
     revalidatePath(`/admin/users/${order.userId}`)
@@ -316,6 +369,23 @@ export async function updateOrderStatus(id: number, status: string) {
       return { error: 'Неверный статус заказа' }
     }
 
+    // Получаем текущий заказ для сравнения статусов
+    const currentOrder = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            firstName: true,
+            email: true
+          }
+        }
+      }
+    })
+
+    if (!currentOrder) {
+      return { error: 'Заказ не найден' }
+    }
+
     const order = await prisma.order.update({
       where: { id },
       data: {
@@ -323,6 +393,11 @@ export async function updateOrderStatus(id: number, status: string) {
         updatedAt: new Date()
       }
     })
+
+    // Создаем уведомление об изменении статуса
+    if (status !== currentOrder.status) {
+      await createOrderStatusNotification(order, currentOrder.status, status)
+    }
 
     revalidatePath('/admin/orders')
     revalidatePath(`/admin/orders/${id}`)
@@ -342,6 +417,23 @@ export async function updateOrderPaymentStatus(id: number, paymentStatus: string
       return { error: 'Неверный статус оплаты' }
     }
 
+    // Получаем текущий заказ для сравнения статусов
+    const currentOrder = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            firstName: true,
+            email: true
+          }
+        }
+      }
+    })
+
+    if (!currentOrder) {
+      return { error: 'Заказ не найден' }
+    }
+
     const order = await prisma.order.update({
       where: { id },
       data: {
@@ -349,6 +441,11 @@ export async function updateOrderPaymentStatus(id: number, paymentStatus: string
         updatedAt: new Date()
       }
     })
+
+    // Создаем уведомление об изменении статуса оплаты
+    if (paymentStatus !== currentOrder.paymentStatus) {
+      await createPaymentNotification(order, paymentStatus)
+    }
 
     revalidatePath('/admin/orders')
     revalidatePath(`/admin/orders/${id}`)
@@ -362,14 +459,37 @@ export async function updateOrderPaymentStatus(id: number, paymentStatus: string
 // CANCEL ORDER - Отмена заказа (ИСПРАВЛЕННАЯ ФУНКЦИЯ)
 export async function cancelOrder(id: number, reason?: string) {
   try {
+    // Получаем текущий заказ
+    const currentOrder = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            firstName: true,
+            email: true
+          }
+        }
+      }
+    })
+
+    if (!currentOrder) {
+      return { error: 'Заказ не найден' }
+    }
+
     const order = await prisma.order.update({
       where: { id },
       data: {
         status: 'CANCELLED' as any,
-        // Убрано поле cancelReason, так как его нет в схеме Prisma
         updatedAt: new Date()
       }
     })
+
+    // Создаем уведомление об отмене заказа
+    await createOrderStatusNotification(
+      order, 
+      currentOrder.status, 
+      'CANCELLED'
+    )
 
     // Логируем причину отмены, если она есть
     if (reason) {

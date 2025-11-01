@@ -1,8 +1,9 @@
-// components/ux/AnimatedContainer.jsx
+// components/ux/animations.jsx
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
 
+// Базовый анимированный контейнер
 export const AnimatedContainer = ({ 
   children, 
   animation = 'fadeInUp',
@@ -54,21 +55,12 @@ export const AnimatedContainer = ({
     slow: 'duration-slow'
   }
 
-  const delayClasses = {
-    100: 'delay-100',
-    200: 'delay-200',
-    300: 'delay-300',
-    400: 'delay-400',
-    500: 'delay-500'
-  }
-
   return (
     <div
       ref={ref}
       className={`
         ${isVisible ? animationClasses[animation] : 'opacity-0'}
         ${durationClasses[duration]}
-        ${delayClasses[delay]}
         ${className}
       `}
       style={{
@@ -115,7 +107,7 @@ export const AnimatedButton = ({
   className = '',
   ...props 
 }) => {
-  const baseClasses = "btn-primary font-medium rounded-xl transition-all duration-300 ease-out transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-4"
+  const baseClasses = "font-medium rounded-xl transition-all duration-300 ease-out transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-4"
   
   const variants = {
     primary: "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-200 shadow-lg hover:shadow-xl",
@@ -141,7 +133,7 @@ export const AnimatedButton = ({
         ${className}
       `}
       disabled={disabled || loading}
-      {...props}
+      {...props} // Убедитесь, что здесь нет лишних пропсов
     >
       {loading ? (
         <div className="flex items-center justify-center space-x-2">
@@ -184,38 +176,139 @@ export const AnimatedCard = ({
   )
 }
 
-// Анимированный инпут
-export const AnimatedInput = ({ 
-  label,
-  error,
-  success,
-  className = '',
-  ...props 
+// Компонент для скелетон-загрузки
+export const SkeletonLoader = ({ 
+  type = 'text',
+  className = ''
 }) => {
+  const types = {
+    text: 'h-4 rounded skeleton',
+    title: 'h-6 rounded skeleton',
+    card: 'h-48 rounded-xl skeleton',
+    avatar: 'w-12 h-12 rounded-full skeleton',
+    button: 'h-10 rounded-xl skeleton'
+  }
+
   return (
-    <div className="space-y-2">
-      {label && (
-        <label className="block text-sm font-medium text-gray-700 animate-fade-in-up">
-          {label}
-        </label>
-      )}
-      <input
-        className={`
-          input-field
-          ${error ? 'input-error' : ''}
-          ${success ? 'input-success' : ''}
-          ${className}
-        `}
-        {...props}
-      />
-      {error && (
-        <p className="text-red-600 text-sm animate-shake">{error}</p>
-      )}
+    <div className={`${types[type]} ${className}`} />
+  )
+}
+
+// Плавающий элемент
+export const FloatingElement = ({ 
+  children,
+  speed = 'normal',
+  className = ''
+}) => {
+  const speedClasses = {
+    slow: 'animate-float-slow',
+    normal: 'animate-float',
+    fast: 'animate-float'
+  }
+
+  return (
+    <div className={`${speedClasses[speed]} ${className}`}>
+      {children}
     </div>
   )
 }
 
-// Компонент для анимированного счетчика
+// Компоненты для таблиц
+export const AnimatedTableContainer = ({ 
+  children, 
+  delay = 0,
+  className = '',
+  ...props 
+}) => {
+  return (
+    <div
+      className={`
+        animate-fade-in-up
+        ${className}
+      `}
+      style={{ animationDelay: `${delay}ms` }}
+      {...props}
+    >
+      {children}
+    </div>
+  )
+}
+
+export const AnimatedTableRow = ({ 
+  children,
+  index = 0,
+  delay = 0,
+  className = '',
+  ...props 
+}) => {
+  const [isVisible, setIsVisible] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsVisible(true)
+    }, delay + (index * 50))
+
+    return () => clearTimeout(timer)
+  }, [delay, index])
+
+  return (
+    <tr
+      className={`
+        transition-all duration-500 ease-out
+        ${isVisible 
+          ? 'opacity-100 translate-y-0' 
+          : 'opacity-0 translate-y-4'
+        }
+        hover:bg-blue-50/30
+        ${className}
+      `}
+      style={{
+        transitionDelay: `${delay + (index * 50)}ms`
+      }}
+      {...props}
+    >
+      {children}
+    </tr>
+  )
+}
+
+export const TableActionButton = ({ 
+  children, 
+  variant = 'primary',
+  size = 'sm',
+  className = '',
+  ...props 
+}) => {
+  const baseClasses = "font-medium rounded-lg transition-all duration-200 ease-out inline-flex items-center justify-center focus:outline-none focus:ring-2"
+  
+  const variants = {
+    primary: "text-blue-600 hover:text-blue-800 hover:bg-blue-50 focus:ring-blue-200 px-3 py-1 rounded",
+    success: "text-green-600 hover:text-green-800 hover:bg-green-50 focus:ring-green-200 px-3 py-1 rounded",
+    danger: "text-red-600 hover:text-red-800 hover:bg-red-50 focus:ring-red-200 px-3 py-1 rounded",
+    secondary: "text-gray-600 hover:text-gray-800 hover:bg-gray-50 focus:ring-gray-200 px-3 py-1 rounded"
+  }
+
+  const sizes = {
+    sm: "text-sm",
+    md: "text-base",
+    lg: "text-lg"
+  }
+
+  return (
+    <button
+      className={`
+        ${baseClasses}
+        ${variants[variant]}
+        ${sizes[size]}
+        ${className}
+      `}
+      {...props}
+    >
+      {children}
+    </button>
+  )
+}
+
 export const AnimatedCounter = ({ 
   value, 
   duration = 2000,
@@ -271,39 +364,21 @@ export const AnimatedCounter = ({
   )
 }
 
-// Компонент для плавающих элементов
-export const FloatingElement = ({ 
+export const SubtleHover = ({ 
   children,
-  speed = 'normal',
-  className = ''
+  className = '',
+  ...props 
 }) => {
-  const speedClasses = {
-    slow: 'animate-float-slow',
-    normal: 'animate-float',
-    fast: 'animate-float'
-  }
-
   return (
-    <div className={`${speedClasses[speed]} ${className}`}>
+    <div
+      className={`
+        transition-all duration-300 ease-out
+        hover:scale-105
+        ${className}
+      `}
+      {...props}
+    >
       {children}
     </div>
-  )
-}
-
-// Компонент для скелетон-загрузки
-export const SkeletonLoader = ({ 
-  type = 'text',
-  className = ''
-}) => {
-  const types = {
-    text: 'h-4 rounded skeleton',
-    title: 'h-6 rounded skeleton',
-    card: 'h-48 rounded-xl skeleton',
-    avatar: 'w-12 h-12 rounded-full skeleton',
-    button: 'h-10 rounded-xl skeleton'
-  }
-
-  return (
-    <div className={`${types[type]} ${className}`} />
   )
 }

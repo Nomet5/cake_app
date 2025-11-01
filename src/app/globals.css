@@ -186,7 +186,64 @@
   animation: progressFill 2s ease-in-out infinite;
 }
 
+
+
 /* === АНИМАЦИИ ПОЯВЛЕНИЯ === */
+
+/* Дополнительные анимации для таблиц */
+.table-row-enter {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.table-row-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+/* Плавное появление таблицы */
+.table-appear {
+  animation: tableAppear 0.6s ease-out forwards;
+}
+
+@keyframes tableAppear {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Субтильные hover эффекты для таблицы */
+.table-hover-row {
+  transition: all 0.3s ease-out;
+}
+
+.table-hover-row:hover {
+  background-color: rgba(59, 130, 246, 0.05);
+  transform: translateX(4px);
+}
+
+/* Анимация для ячеек */
+.cell-appear {
+  animation: cellAppear 0.5s ease-out forwards;
+}
+
+@keyframes cellAppear {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 .animate-fade-in-up {
   animation: fadeInUp 0.6s ease-out;
 }

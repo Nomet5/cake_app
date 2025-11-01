@@ -1,9 +1,9 @@
-// app/admin/users/components/create-user-modal.jsx
+// app/admin/users/components/create-user-button.jsx
 'use client'
 
 import Link from "next/link";
 
-export default function CreateUserModal() {
+export default function CreateUserButton() {
   return (
     <>
       {/* Кнопка-ссылка для создания пользователя */}

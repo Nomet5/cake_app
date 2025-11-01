@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 
 export default function BackButton({ 
   href = '/admin/users', 
-  children = '← Назад к списку пользователей' 
+  children = 'Назад к списку пользователей' 
 }) {
   const router = useRouter()
 

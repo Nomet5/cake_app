@@ -45,7 +45,7 @@ export async function getUsers() {
   }
 }
 
-// CREATE
+// CREATE - исправленная версия
 export async function createUser(formData: FormData) {
   try {
     const firstName = formData.get("firstName") as string
@@ -53,23 +53,23 @@ export async function createUser(formData: FormData) {
     const password = formData.get("password") as string
     const phone = formData.get("phone") as string
 
-    console.log('Creating user with:', { firstName, email, phone }); // Для отладки
+    console.log('Creating user with:', { firstName, email, phone })
 
     // Валидация данных
     if (!firstName?.trim()) {
-      return { error: 'Имя обязательно для заполнения' }
+      return { success: false, error: 'Имя обязательно для заполнения' }
     }
 
     if (!email?.trim()) {
-      return { error: 'Email обязателен для заполнения' }
+      return { success: false, error: 'Email обязателен для заполнения' }
     }
 
     if (!password?.trim()) {
-      return { error: 'Пароль обязателен для заполнения' }
+      return { success: false, error: 'Пароль обязателен для заполнения' }
     }
 
     if (password.length < 6) {
-      return { error: 'Пароль должен содержать минимум 6 символов' }
+      return { success: false, error: 'Пароль должен содержать минимум 6 символов' }
     }
 
     // Проверка существующего пользователя
@@ -78,7 +78,7 @@ export async function createUser(formData: FormData) {
     })
 
     if (existingUser) {
-      return { error: 'Пользователь с таким email уже существует' }
+      return { success: false, error: 'Пользователь с таким email уже существует' }
     }
 
     // Создаем пользователя
@@ -86,7 +86,7 @@ export async function createUser(formData: FormData) {
       data: {
         firstName: firstName.trim(),
         email: email.trim().toLowerCase(),
-        passwordHash: await hashPassword(password), // Хешируем пароль
+        passwordHash: await hashPassword(password),
         phone: phone?.trim() || null
       }
     })
@@ -96,8 +96,12 @@ export async function createUser(formData: FormData) {
 
     revalidatePath('/admin/users')
     
-    // Перенаправляем после успешного создания
-    redirect('/admin/users')
+    // Возвращаем успешный результат вместо redirect
+    return { 
+      success: true, 
+      message: 'Пользователь успешно создан',
+      userId: user.id 
+    }
     
   } catch (error) {
     console.error('Error creating user:', error)
@@ -106,7 +110,7 @@ export async function createUser(formData: FormData) {
       `Произошла ошибка при создании пользователя: ${error}`,
       'HIGH'
     )
-    return { error: 'Ошибка при создании пользователя' }
+    return { success: false, error: 'Ошибка при создании пользователя' }
   }
 }
 
@@ -182,11 +186,19 @@ export async function deleteUser(id: number) {
   }
 }
 
-// GET USER BY ID
-export async function getUserById(id: number) {
+// GET USER BY ID - ИСПРАВЛЕННАЯ ВЕРСИЯ
+export async function getUserById(id: number | string) {
   try {
+    // Конвертируем id в число
+    const userId = typeof id === 'string' ? parseInt(id) : id
+    
+    // Проверяем валидность ID
+    if (isNaN(userId) || userId <= 0) {
+      return { error: 'Неверный идентификатор пользователя' }
+    }
+
     const user = await prisma.user.findUnique({
-      where: { id },
+      where: { id: userId },
       include: {
         addresses: true,
         chefProfile: true,

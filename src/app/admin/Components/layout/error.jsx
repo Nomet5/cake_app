@@ -57,7 +57,7 @@ export default function AdminError({ error, reset }) {
             </button>
             
             <Link
-              href="/admin/dashboard"
+              href="/admin/"
               className="block w-full text-center border border-gray-300 text-gray-700 font-medium py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors"
             >
               Вернуться на главную

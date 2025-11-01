@@ -1,48 +1,47 @@
-// src/app/admin/users/components/CreateUserModal.jsx
-
 'use client'
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { createUser } from '../../actions/admin/user.actions'
+import { createUser } from '@/lib/actions/user.actions' // Проверьте правильный путь
 
 export default function CreateUserModal() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // Функция закрытия модального окна
   const handleClose = () => {
-    router.push('/admin/users') // Возвращаемся к списку без параметров
+    router.push('/admin/users')
+  }
+
+  const handleOverlayClick = (e) => {
+    if (e.target === e.currentTarget) {
+      handleClose()
+    }
   }
 
   // Обработка отправки формы
-  async function handleSubmit(formData) {
+  async function handleSubmit(event) {
+    event.preventDefault()
     setIsLoading(true)
     setError('')
 
     try {
+      const formData = new FormData(event.currentTarget)
+      
       const result = await createUser(formData)
 
       if (result.success) {
-        // Закрываем модальное окно и обновляем страницу
+        // Успешное создание - закрываем модалку и обновляем страницу
         router.push('/admin/users')
-        router.refresh() // Обновляем данные на сервере
+        router.refresh()
       } else {
-        setError(result.error)
+        setError(result.error || 'Произошла ошибка при создании пользователя')
       }
     } catch (err) {
-      setError('Произошла ошибка при создании пользователя')
       console.error('Create user error:', err)
+      setError('Произошла непредвиденная ошибка')
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  // Закрытие по клику на overlay
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) {
-      handleClose()
     }
   }
 
@@ -67,7 +66,7 @@ export default function CreateUserModal() {
         </div>
 
         {/* Форма */}
-        <form action={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Сообщение об ошибке */}
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3">

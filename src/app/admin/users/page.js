@@ -4,7 +4,7 @@ import UsersTable from "./components/users-table";
 import UsersFilters from "./components/users-filters";
 import StatsOverview from "./components/stats-overview";
 import SearchFilters from "./components/search-filters";
-import CreateUserModal from "./components/create-user-modal";
+import CreateUserButton from "./components/create-user-button"; // Измените импорт
 
 export default async function UsersPage({ searchParams = {} }) {
   const users = await getUsers();
@@ -45,7 +45,7 @@ export default async function UsersPage({ searchParams = {} }) {
           </p>
         </div>
         <div className="animate-scale-in" style={{ animationDelay: '0.2s' }}>
-          <CreateUserModal />
+          <CreateUserButton /> {/* Используйте новый компонент */}
         </div>
       </div>
 
@@ -93,7 +93,7 @@ export default async function UsersPage({ searchParams = {} }) {
           <h3 className="text-xl font-bold text-gray-900 mb-2">Нет пользователей</h3>
           <p className="text-gray-600 mb-6">Создайте первого пользователя чтобы начать работу</p>
           <div className="animate-pulse">
-            <CreateUserModal />
+            <CreateUserButton /> {/* Используйте новый компонент */}
           </div>
         </div>
       )}

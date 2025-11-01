@@ -1,66 +1,158 @@
-// src/app/admin/Components/admin_breadcrumbs.jsx
+// src/app/admin/Components/layout/admin-breadcrumbs.jsx
 'use client'
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-export function AdminBreadcrumbs() {
+export default function AdminBreadcrumbs() {
   const pathname = usePathname()
   
-  const pathSegments = pathname.split('/').filter(segment => segment)
-
-  const pathLabels = {
-    'admin': 'Главная',
-    'dashboard': 'Дашборд',
-    'users': 'Пользователи',
-    'chefs': 'Повара',
-    'products': 'Товары',
-    'categories': 'Категории',
-    'orders': 'Заказы',
-    'reviews': 'Отзывы',
-  }
-
-  const breadcrumbs = pathSegments.map((segment, index) => {
-    const href = '/' + pathSegments.slice(0, index + 1).join('/')
-    let label = pathLabels[segment] || segment
+  // Функция для генерации хлебных крошек на основе пути
+  const generateBreadcrumbs = () => {
+    const paths = pathname.split('/').filter(path => path)
     
-    return {
-      href,
-      label: label.charAt(0).toUpperCase() + label.slice(1),
-      isLast: index === pathSegments.length - 1
-    }
-  })
+    const breadcrumbs = paths.map((path, index) => {
+      const href = '/' + paths.slice(0, index + 1).join('/')
+      const isLast = index === paths.length - 1
+      
+      // Преобразуем путь в читаемое название
+      let label = getLabelForPath(path, paths, index)
 
-  // Добавляем главную страницу
-  if (!breadcrumbs[0] || breadcrumbs[0].label !== 'Главная') {
+      return {
+        href: isLast ? null : href,
+        label,
+        isLast
+      }
+    })
+
+    // Добавляем главную страницу
     breadcrumbs.unshift({
-      href: '/admin',
+      href: '/',
       label: 'Главная',
       isLast: false
     })
+
+    return breadcrumbs
   }
 
+  // Функция для получения читаемого названия пути
+  const getLabelForPath = (path, paths, index) => {
+    const prevPath = index > 0 ? paths[index - 1] : null
+    
+    // Обработка для разных разделов админки
+    switch (path) {
+      case 'admin':
+        return 'Панель управления'
+      
+      // Пользователи
+      case 'users':
+        return 'Пользователи'
+      case 'create':
+        return prevPath === 'users' ? 'Создание пользователя' : 'Создание'
+      case 'edit':
+        return 'Редактирование'
+      
+      // Категории
+      case 'categories':
+        return 'Категории'
+      case 'create':
+        return prevPath === 'categories' ? 'Создание категории' : 'Создание'
+      
+      // Повара
+      case 'chefs':
+        return 'Повара'
+      case 'create':
+        return prevPath === 'chefs' ? 'Создание повара' : 'Создание'
+      
+      // Уведомления
+      case 'notifications':
+        return 'Уведомления'
+      
+      // Заказы
+      case 'orders':
+        return 'Заказы'
+      
+      // Товары
+      case 'products':
+        return 'Товары'
+      case 'create':
+        return prevPath === 'products' ? 'Создание товара' : 'Создание'
+      
+      // Отзывы
+      case 'reviews':
+        return 'Отзывы'
+      
+      // Динамические ID
+      default:
+        // Если это ID (число), показываем контекстное название
+        if (!isNaN(path) && prevPath) {
+          return getLabelForId(prevPath)
+        }
+        // Для неизвестных путей - капитализируем первую букву
+        return path.charAt(0).toUpperCase() + path.slice(1)
+    }
+  }
+
+  // Функция для получения названия для ID
+  const getLabelForId = (prevPath) => {
+    switch (prevPath) {
+      case 'users':
+        return 'Профиль пользователя'
+      case 'categories':
+        return 'Категория'
+      case 'chefs':
+        return 'Профиль повара'
+      case 'orders':
+        return 'Детали заказа'
+      case 'products':
+        return 'Товар'
+      case 'reviews':
+        return 'Отзыв'
+      case 'notifications':
+        return 'Уведомление'
+      default:
+        return 'Детали'
+    }
+  }
+
+  const breadcrumbs = generateBreadcrumbs()
+
   return (
-    <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-6 animate-fade-in">
-      {breadcrumbs.map((breadcrumb, index) => (
-        <div key={breadcrumb.href} className="flex items-center animate-scale-in" style={{ animationDelay: `${index * 0.1}s` }}>
-          {breadcrumb.isLast ? (
-            <span className="text-gray-900 font-medium bg-gradient-to-r from-gray-800 to-blue-600 bg-clip-text text-transparent">
-              {breadcrumb.label}
-            </span>
-          ) : (
-            <>
-              <Link 
-                href={breadcrumb.href}
-                className="hover:text-blue-600 transition-all duration-300 hover-lift px-2 py-1 rounded-lg"
+    <nav className="flex mb-6" aria-label="Breadcrumb">
+      <ol className="flex items-center space-x-2 text-sm flex-wrap">
+        {breadcrumbs.map((crumb, index) => (
+          <li key={index} className="flex items-center">
+            {index > 0 && (
+              <svg 
+                className="h-4 w-4 text-gray-400 flex-shrink-0 mx-1" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
               >
-                {breadcrumb.label}
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M9 5l7 7-7 7" 
+                />
+              </svg>
+            )}
+            {crumb.isLast ? (
+              <span className="text-gray-900 font-medium truncate max-w-32">
+                {crumb.label}
+              </span>
+            ) : (
+              <Link 
+                href={crumb.href}
+                className="text-gray-500 hover:text-gray-700 transition-colors duration-200 truncate max-w-32"
+                title={crumb.label}
+              >
+                {crumb.label}
               </Link>
-              <span className="mx-2 text-gray-400 animate-pulse">/</span>
-            </>
-          )}
-        </div>
-      ))}
+            )}
+          </li>
+        ))}
+      </ol>
     </nav>
   )
 }

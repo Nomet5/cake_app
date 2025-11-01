@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import AdminSidebar from "./Components/layout/admin-sidebar";
 import AdminHeader from "./Components/layout/admin-header";
 import AdminErrorBoundary from "./error-boundary";
-import AdminBreadcrumbs from "./Components/layout/admin_breadcrumbs";
+import AdminBreadcrumbs from "./Components/layout/admin_breadcrumbs"; // Исправлен импорт
 import AdminLoading from "./Components/ui/admin-loading";
 import { NotificationBell } from "./Components/notification";
 
@@ -78,8 +78,8 @@ export default function AdminLayout({ children }) {
             transition-all duration-500 ease-in-out
           `}>
             <div className="p-4 lg:p-6 space-y-6">
-              {/* Breadcrumbs */}
-              {/* <AdminBreadcrumbs /> */}
+              {/* Breadcrumbs - теперь подключены */}
+              <AdminBreadcrumbs />
               
               {/* Контент страницы с анимациями */}
               <div className="animate-fade-in-up">

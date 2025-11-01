@@ -1,218 +1,341 @@
+// app/admin/chefs/components/chefs-table.jsx
 'use client'
 
-import Link from 'next/link'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { toggleChefActive, verifyChef, deleteChef } from "../../../actions/admin/chef.actions"
+import { 
+  bulkUpdateChefs, 
+  updateChefStatus,
+  verifyChef 
+} from "../../../actions/admin/chef.actions"
+import { AnimatedTableRow, TableActionButton } from "../../Components/animation-component"
 
-export default function ChefsTable({ chefs, currentSort }) {
+export default function ChefsTable({ chefs, currentSort, pagination }) {
   const router = useRouter()
+  const [selectedChefs, setSelectedChefs] = useState(new Set())
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  const handleToggleActive = async (chefId, currentStatus) => {
-    if (confirm(`Вы уверены, что хотите ${currentStatus ? 'деактивировать' : 'активировать'} повара?`)) {
-      const result = await toggleChefActive(chefId)
-      if (result.success) {
-        router.refresh()
-      } else {
-        alert(result.error)
-      }
+  const handleSelectChef = (chefId) => {
+    const newSelected = new Set(selectedChefs)
+    if (newSelected.has(chefId)) {
+      newSelected.delete(chefId)
+    } else {
+      newSelected.add(chefId)
+    }
+    setSelectedChefs(newSelected)
+  }
+
+  const handleSelectAll = () => {
+    if (selectedChefs.size === chefs.length) {
+      setSelectedChefs(new Set())
+    } else {
+      setSelectedChefs(new Set(chefs.map(chef => chef.id)))
     }
   }
 
-  const handleVerify = async (chefId) => {
-    if (confirm('Вы уверены, что хотите верифицировать повара?')) {
+  const handleBulkOperation = async (operation) => {
+    if (selectedChefs.size === 0) return
+
+    try {
+      setLoading(true)
+      setError('')
+      
+      const chefIds = Array.from(selectedChefs)
+      let result
+
+      switch (operation) {
+        case 'activate':
+          result = await bulkUpdateChefs(chefIds, true)
+          break
+        case 'deactivate':
+          result = await bulkUpdateChefs(chefIds, false)
+          break
+        case 'verify':
+          // Для массовой верификации нужно вызвать verify для каждого повара
+          const results = await Promise.all(
+            chefIds.map(id => verifyChef(id))
+          )
+          const successful = results.filter(r => r.success).length
+          result = { 
+            success: true, 
+            message: `Верифицировано ${successful} из ${chefIds.length} поваров`,
+            updatedCount: successful
+          }
+          break
+        default:
+          result = { error: 'Неизвестная операция' }
+      }
+      
+      if (result.success) {
+        setSelectedChefs(new Set())
+        // Обновляем страницу для отображения изменений
+        router.refresh()
+      } else {
+        setError(result.error || 'Ошибка выполнения операции')
+      }
+    } catch (err) {
+      setError('Произошла ошибка при выполнении операции')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleStatusToggle = async (chefId, currentStatus) => {
+    try {
+      setLoading(true)
+      const result = await updateChefStatus(chefId, !currentStatus)
+      
+      if (result.success) {
+        router.refresh()
+      } else {
+        setError(result.error || 'Ошибка изменения статуса')
+      }
+    } catch (err) {
+      setError('Произошла ошибка при изменении статуса')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleVerifyChef = async (chefId) => {
+    try {
+      setLoading(true)
       const result = await verifyChef(chefId)
+      
       if (result.success) {
         router.refresh()
       } else {
-        alert(result.error)
+        setError(result.error || 'Ошибка верификации')
       }
+    } catch (err) {
+      setError('Произошла ошибка при верификации')
+    } finally {
+      setLoading(false)
     }
   }
 
-  const handleDelete = async (chefId, chefName) => {
-    if (confirm(`Вы уверены, что хотите удалить повара "${chefName}"?`)) {
-      const result = await deleteChef(chefId)
-      if (result.success) {
-        router.refresh()
-      } else {
-        alert(result.error)
-      }
+  const handleChefClick = (chefId) => {
+    router.push(`/admin/chefs/${chefId}`)
+  }
+
+  const getStatusBadge = (chef) => {
+    if (chef.isActive) {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1"></span>
+          Активен
+        </span>
+      )
+    } else {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+          <span className="w-1.5 h-1.5 bg-gray-500 rounded-full mr-1"></span>
+          Неактивен
+        </span>
+      )
     }
+  }
+
+  const getVerificationBadge = (chef) => {
+    if (chef.isVerified) {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          </svg>
+          Верифицирован
+        </span>
+      )
+    }
+    return null
   }
 
   if (chefs.length === 0) {
     return (
-      <div className="bg-white rounded-lg border p-12 text-center">
-        <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+        <svg className="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
         </svg>
-        <h3 className="mt-4 text-lg font-medium text-gray-900">Повары не найдены</h3>
-        <p className="mt-2 text-gray-500">
-          Попробуйте изменить параметры поиска или фильтры
-        </p>
-        <Link
-          href="/admin/chefs/create"
-          className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-        >
-          Добавить первого повара
-        </Link>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Повары не найдены</h3>
+        <p className="text-gray-500">Попробуйте изменить параметры поиска или фильтрации</p>
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-lg border overflow-hidden">
-      {/* Заголовок таблицы */}
-      <div className="px-6 py-4 border-b bg-gray-50">
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-gray-900">Список поваров</h3>
-          <span className="text-sm text-gray-500">
-            {chefs.length} всего
-          </span>
+    <div className="space-y-4">
+      {/* Массовые операции */}
+      {selectedChefs.size > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 animate-fade-in">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <span className="text-blue-800 font-medium">
+                Выбрано поваров: {selectedChefs.size}
+              </span>
+            </div>
+            <div className="flex space-x-2">
+              <TableActionButton
+                onClick={() => handleBulkOperation('activate')}
+                variant="success"
+                disabled={loading}
+              >
+                Активировать
+              </TableActionButton>
+              <TableActionButton
+                onClick={() => handleBulkOperation('deactivate')}
+                variant="secondary"
+                disabled={loading}
+              >
+                Деактивировать
+              </TableActionButton>
+              <TableActionButton
+                onClick={() => handleBulkOperation('verify')}
+                variant="primary"
+                disabled={loading}
+              >
+                Верифицировать
+              </TableActionButton>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Сообщение об ошибке */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-red-800">{error}</span>
+          </div>
+        </div>
+      )}
 
       {/* Таблица */}
-      <div className="overflow-x-auto">
+      <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th scope="col" className="relative w-12 px-6 sm:w-16 sm:px-8">
+                <input
+                  type="checkbox"
+                  className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  checked={selectedChefs.size === chefs.length && chefs.length > 0}
+                  onChange={handleSelectAll}
+                  disabled={loading}
+                />
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Повар
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Контакты
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Опыт
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Статистика
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Статус
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Действия
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Статистика
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Дата регистрации
+              </th>
+              <th scope="col" className="relative px-6 py-3">
+                <span className="sr-only">Действия</span>
               </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {chefs.map((chef) => (
-              <tr key={chef.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4 whitespace-nowrap">
+            {chefs.map((chef, index) => (
+              <AnimatedTableRow 
+                key={chef.id} 
+                index={index}
+                className="hover:bg-gray-50 transition-colors duration-150"
+              >
+                <td className="relative w-12 px-6 sm:w-16 sm:px-8">
+                  <input
+                    type="checkbox"
+                    className="absolute left-4 top-1/2 -mt-2 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    checked={selectedChefs.has(chef.id)}
+                    onChange={() => handleSelectChef(chef.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    disabled={loading}
+                  />
+                </td>
+                <td 
+                  className="px-6 py-4 whitespace-nowrap cursor-pointer"
+                  onClick={() => handleChefClick(chef.id)}
+                >
                   <div className="flex items-center">
+                    <div className="flex-shrink-0 h-10 w-10 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                      {chef.businessName?.charAt(0) || 'П'}
+                    </div>
                     <div className="ml-4">
                       <div className="text-sm font-medium text-gray-900">
                         {chef.businessName}
                       </div>
                       <div className="text-sm text-gray-500">
-                        ID: {chef.id}
+                        {chef.user?.email}
                       </div>
-                      {chef.description && (
-                        <div className="text-xs text-gray-400 mt-1 max-w-xs truncate">
-                          {chef.description}
+                      {chef.specialty && (
+                        <div className="text-xs text-gray-400 mt-1">
+                          {chef.specialty}
                         </div>
                       )}
                     </div>
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{chef.user?.email}</div>
-                  <div className="text-sm text-gray-500">{chef.user?.firstName}</div>
-                  <div className="text-sm text-gray-400">{chef.user?.phone}</div>
+                  <div className="space-y-2">
+                    {getStatusBadge(chef)}
+                    {getVerificationBadge(chef)}
+                  </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {chef.yearsOfExperience ? `${chef.yearsOfExperience} лет` : 'Не указано'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   <div className="space-y-1">
                     <div className="flex items-center">
-                      <span className="w-20">Товары:</span>
-                      <span className="font-medium">{chef._count?.products || 0}</span>
+                      <svg className="w-4 h-4 text-gray-400 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                      </svg>
+                      Товаров: {chef._count?.products || 0}
                     </div>
                     <div className="flex items-center">
-                      <span className="w-20">Заказы:</span>
-                      <span className="font-medium">{chef._count?.orders || 0}</span>
-                    </div>
-                    <div className="flex items-center">
-                      <span className="w-20">Отзывы:</span>
-                      <span className="font-medium">{chef._count?.reviews || 0}</span>
+                      <svg className="w-4 h-4 text-gray-400 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                      </svg>
+                      Заказов: {chef._count?.orders || 0}
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex flex-col space-y-2">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      chef.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}>
-                      {chef.isActive ? 'Активен' : 'Неактивен'}
-                    </span>
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      chef.isVerified ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {chef.isVerified ? 'Верифицирован' : 'Не верифицирован'}
-                    </span>
-                  </div>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {new Date(chef.createdAt).toLocaleDateString('ru-RU')}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <div className="flex items-center space-x-2">
-                    <Link
-                      href={`/admin/chefs/${chef.id}`}
-                      className="text-blue-600 hover:text-blue-900 transition-colors p-1 rounded hover:bg-blue-50"
-                      title="Просмотреть профиль"
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <div className="flex justify-end space-x-2">
+                    <TableActionButton
+                      onClick={() => handleChefClick(chef.id)}
+                      variant="primary"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                    </Link>
-                    <Link
-                      href={`/admin/chefs/${chef.id}/edit`}
-                      className="text-indigo-600 hover:text-indigo-900 transition-colors p-1 rounded hover:bg-indigo-50"
-                      title="Редактировать"
+                      Просмотр
+                    </TableActionButton>
+                    <TableActionButton
+                      onClick={() => handleStatusToggle(chef.id, chef.isActive)}
+                      variant={chef.isActive ? "secondary" : "success"}
+                      disabled={loading}
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </Link>
-                    <button
-                      onClick={() => handleToggleActive(chef.id, chef.isActive)}
-                      className={`p-1 rounded transition-colors ${
-                        chef.isActive 
-                          ? 'text-yellow-600 hover:text-yellow-900 hover:bg-yellow-50' 
-                          : 'text-green-600 hover:text-green-900 hover:bg-green-50'
-                      }`}
-                      title={chef.isActive ? 'Деактивировать' : 'Активировать'}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </button>
+                      {chef.isActive ? 'Деактивировать' : 'Активировать'}
+                    </TableActionButton>
                     {!chef.isVerified && (
-                      <button
-                        onClick={() => handleVerify(chef.id)}
-                        className="text-purple-600 hover:text-purple-900 transition-colors p-1 rounded hover:bg-purple-50"
-                        title="Верифицировать"
+                      <TableActionButton
+                        onClick={() => handleVerifyChef(chef.id)}
+                        variant="success"
+                        disabled={loading}
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </button>
+                        Верифицировать
+                      </TableActionButton>
                     )}
-                    <button
-                      onClick={() => handleDelete(chef.id, chef.businessName)}
-                      className="text-red-600 hover:text-red-900 transition-colors p-1 rounded hover:bg-red-50"
-                      title="Удалить"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
                   </div>
                 </td>
-              </tr>
+              </AnimatedTableRow>
             ))}
           </tbody>
         </table>

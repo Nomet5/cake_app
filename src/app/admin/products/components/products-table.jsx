@@ -6,6 +6,12 @@ import Link from 'next/link'
 import ProductStatus from './product-status'
 import { toggleProductAvailable } from "../../../actions/admin/product.actions"
 import { useRouter } from 'next/navigation'
+import { 
+  AnimatedTableContainer,
+  AnimatedTableRow,
+  TableActionButton,
+  SubtleHover
+} from '../../Components/animation-component'
 
 export default function ProductsTable({ products }) {
   const router = useRouter()
@@ -41,230 +47,266 @@ export default function ProductsTable({ products }) {
     }
   }
 
-  const columns = [
-    { key: 'select', label: '', width: 'w-12', sortable: false },
-    { key: 'product', label: 'Продукт', width: 'w-64', sortable: true },
-    { key: 'chef', label: 'Повар', width: 'w-48', sortable: true },
-    { key: 'category', label: 'Категория', width: 'w-32', sortable: true },
-    { key: 'price', label: 'Цена', width: 'w-24', sortable: true },
-    { key: 'orders', label: 'Заказы', width: 'w-20', sortable: true },
-    { key: 'reviews', label: 'Отзывы', width: 'w-20', sortable: true },
-    { key: 'status', label: 'Статус', width: 'w-28', sortable: true },
-    { key: 'created', label: 'Создан', width: 'w-32', sortable: true },
-    { key: 'actions', label: 'Действия', width: 'w-24', sortable: false }
-  ]
+  const getProductImage = (product) => {
+    if (product.images?.[0]) {
+      return (
+        <img 
+          src={product.images[0].imageUrl} 
+          alt={product.name}
+          className="w-10 h-10 rounded-lg object-cover shadow-sm"
+        />
+      )
+    }
+    return (
+      <div className="w-10 h-10 bg-gradient-to-br from-green-100 to-blue-100 rounded-lg flex items-center justify-center shadow-sm">
+        <span className="text-lg">🍽️</span>
+      </div>
+    )
+  }
+
+  const getChefInfo = (product) => {
+    const chefName = product.chef?.businessName || product.chef?.user?.firstName || 'Не указан'
+    const chefEmail = product.chef?.user?.email
+    
+    return (
+      <div>
+        <div className="text-sm font-medium text-gray-900">{chefName}</div>
+        {chefEmail && (
+          <div className="text-sm text-gray-500">{chefEmail}</div>
+        )}
+      </div>
+    )
+  }
+
+  const getCategoryBadge = (product) => {
+    const categoryName = product.category?.name
+    if (!categoryName) return null
+    
+    return (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+        {categoryName}
+      </span>
+    )
+  }
+
+  const getStatsBadges = (product) => {
+    const orderCount = product._count?.orderItems || 0
+    const reviewCount = product._count?.reviews || 0
+
+    return (
+      <div className="flex gap-2">
+        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+          {orderCount} зак.
+        </span>
+        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
+          {reviewCount} отз.
+        </span>
+      </div>
+    )
+  }
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden animate-fade-in-up">
-      {/* Заголовок таблицы с количеством выбранных */}
-      {selectedProducts.length > 0 && (
-        <div className="px-6 py-4 bg-blue-50 border-b border-blue-200 flex items-center justify-between animate-fade-in">
-          <div className="flex items-center space-x-3">
-            <span className="text-sm font-medium text-blue-800">
-              Выбрано: {selectedProducts.length}
-            </span>
-            <button
-              onClick={() => setSelectedProducts([])}
-              className="text-sm text-blue-600 hover:text-blue-800 transition-colors duration-200"
-            >
-              Сбросить
-            </button>
-          </div>
-          <div className="text-sm text-blue-600 font-medium">
-            ⚡ Доступны массовые действия
+    <>
+      <AnimatedTableContainer
+        delay={100}
+        className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200"
+      >
+        {/* Заголовок таблицы */}
+        <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <SubtleHover className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center mr-3">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                </svg>
+              </SubtleHover>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Список продуктов
+                </h3>
+                {selectedProducts.length > 0 && (
+                  <div className="flex items-center space-x-3 mt-1">
+                    <span className="text-sm text-blue-800 font-medium">
+                      Выбрано: {selectedProducts.length}
+                    </span>
+                    <button
+                      onClick={() => setSelectedProducts([])}
+                      className="text-sm text-blue-600 hover:text-blue-800 transition-colors duration-200"
+                    >
+                      Сбросить
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="text-sm text-gray-500">
+              Всего: <span className="text-green-600 font-semibold">{products.length}</span>
+            </div>
           </div>
         </div>
-      )}
 
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
-              {columns.map((column, index) => (
-                <th 
-                  key={column.key}
-                  className={`px-4 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider ${column.width} animate-slide-in-right`}
-                  style={{animationDelay: `${index * 0.05}s`}}
-                >
-                  {column.key === 'select' ? (
-                    <input
-                      type="checkbox"
-                      checked={selectAll}
-                      onChange={(e) => handleSelectAll(e.target.checked)}
-                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                    />
-                  ) : (
-                    <div className="flex items-center space-x-1">
-                      <span>{column.label}</span>
-                      {column.sortable && (
-                        <button className="text-gray-400 hover:text-gray-600 transition-colors">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {products.map((product, rowIndex) => (
-              <tr 
-                key={product.id}
-                className="hover:bg-gray-50 transition-all duration-200 group animate-fade-in-up"
-                style={{animationDelay: `${rowIndex * 0.03}s`}}
-              >
-                {/* Чекбокс выбора */}
-                <td className="px-4 py-4 whitespace-nowrap">
+        {/* Таблица */}
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="w-12 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <input
                     type="checkbox"
-                    checked={selectedProducts.includes(product.id)}
-                    onChange={(e) => handleSelectProduct(product.id, e.target.checked)}
-                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 transition-all duration-200"
+                    checked={selectAll}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
                   />
-                </td>
-
-                {/* Продукт */}
-                <td className="px-4 py-4 whitespace-nowrap">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 flex-shrink-0 bg-gradient-to-br from-green-100 to-blue-100 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                      {product.images?.[0] ? (
-                        <img 
-                          src={product.images[0].imageUrl} 
-                          alt={product.name}
-                          className="w-8 h-8 rounded object-cover"
-                        />
-                      ) : (
-                        <span className="text-lg">🍽️</span>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <Link 
-                        href={`/admin/products/${product.id}`}
-                        className="text-sm font-medium text-gray-900 hover:text-green-600 transition-colors duration-200 truncate block"
-                      >
-                        {product.name}
-                      </Link>
-                      <p className="text-sm text-gray-500 truncate max-w-xs">
-                        {product.description || 'Без описания'}
-                      </p>
-                    </div>
-                  </div>
-                </td>
-
-                {/* Повар */}
-                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                  <div className="flex items-center space-x-2">
-                    <span>👨‍🍳</span>
-                    <span>{product.chef?.businessName || product.chef?.user?.firstName}</span>
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {product.chef?.user?.email}
-                  </div>
-                </td>
-
-                {/* Категория */}
-                <td className="px-4 py-4 whitespace-nowrap">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    {product.category?.name || '—'}
-                  </span>
-                </td>
-
-                {/* Цена */}
-                <td className="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                  {product.price} ₽
-                </td>
-
-                {/* Заказы */}
-                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
-                  <div className="flex items-center justify-center space-x-1">
-                    <span>📦</span>
-                    <span>{product._count?.orderItems || 0}</span>
-                  </div>
-                </td>
-
-                {/* Отзывы */}
-                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
-                  <div className="flex items-center justify-center space-x-1">
-                    <span>⭐</span>
-                    <span>{product._count?.reviews || 0}</span>
-                  </div>
-                </td>
-
-                {/* Статус */}
-                <td className="px-4 py-4 whitespace-nowrap">
-                  <ProductStatus product={product} />
-                </td>
-
-                {/* Дата создания */}
-                <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {new Date(product.createdAt).toLocaleDateString('ru-RU')}
-                </td>
-
-                {/* Действия */}
-                <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => handleToggleStatus(product.id, product.isAvailable)}
-                      className={`p-1 rounded transition-all duration-200 transform hover:scale-110 ${
-                        product.isAvailable 
-                          ? 'text-green-600 hover:bg-green-100' 
-                          : 'text-red-600 hover:bg-red-100'
-                      }`}
-                      title={product.isAvailable ? 'Деактивировать' : 'Активировать'}
-                    >
-                      {product.isAvailable ? '✅' : '⏸️'}
-                    </button>
-                    
-                    <Link
-                      href={`/admin/products/${product.id}`}
-                      className="text-blue-600 hover:text-blue-900 p-1 rounded transition-all duration-200 transform hover:scale-110"
-                      title="Просмотр"
-                    >
-                      👁️
-                    </Link>
-                    
-                    <Link
-                      href={`/admin/products/${product.id}/edit`}
-                      className="text-green-600 hover:text-green-900 p-1 rounded transition-all duration-200 transform hover:scale-110"
-                      title="Редактировать"
-                    >
-                      ✏️
-                    </Link>
-                  </div>
-                </td>
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Продукт
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Повар
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Категория
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Цена
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Статистика
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Статус
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Создан
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Действия
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {products.map((product, index) => (
+                <AnimatedTableRow
+                  key={product.id}
+                  index={index}
+                  delay={100}
+                  className="group hover:bg-gray-50"
+                >
+                  {/* Чекбокс выбора */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <input
+                      type="checkbox"
+                      checked={selectedProducts.includes(product.id)}
+                      onChange={(e) => handleSelectProduct(product.id, e.target.checked)}
+                      className="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2 transition-all duration-200"
+                    />
+                  </td>
 
-      {/* Пустое состояние */}
-      {products.length === 0 && (
-        <div className="text-center py-12 animate-pulse">
-          <div className="w-16 h-16 bg-gray-200 rounded-full mx-auto mb-4 flex items-center justify-center">
-            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Продукты не найдены</h3>
-          <p className="text-gray-500">Создайте первый продукт или измените фильтры</p>
-        </div>
-      )}
+                  {/* Продукт */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <SubtleHover>
+                        {getProductImage(product)}
+                      </SubtleHover>
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-gray-900">
+                          {product.name}
+                        </div>
+                        <div className="text-sm text-gray-500 max-w-xs truncate">
+                          {product.description || 'Без описания'}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
 
-      {/* Пагинация (можно добавить позже) */}
-      {products.length > 0 && (
-        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
-          <div className="text-sm text-gray-700">
-            Показано {products.length} из {products.length} продуктов
-          </div>
-          <div className="flex space-x-2">
-            {/* Кнопки пагинации можно добавить здесь */}
-          </div>
+                  {/* Повар */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {getChefInfo(product)}
+                  </td>
+
+                  {/* Категория */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {getCategoryBadge(product)}
+                  </td>
+
+                  {/* Цена */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-semibold text-gray-900">
+                      {product.price} ₽
+                    </div>
+                  </td>
+
+                  {/* Статистика */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {getStatsBadges(product)}
+                  </td>
+
+                  {/* Статус */}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <ProductStatus product={product} />
+                  </td>
+
+                  {/* Дата создания */}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {new Date(product.createdAt).toLocaleDateString('ru-RU')}
+                  </td>
+
+                  {/* Действия */}
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div className="flex justify-end space-x-2">
+                      <Link
+                        href={`/admin/products/${product.id}`}
+                        className="text-blue-600 hover:text-blue-900 px-3 py-1 rounded hover:bg-blue-50 transition-colors"
+                      >
+                        Просмотр
+                      </Link>
+                      <Link
+                        href={`/admin/products/${product.id}/edit`}
+                        className="text-green-600 hover:text-green-900 px-3 py-1 rounded hover:bg-green-50 transition-colors"
+                      >
+                        Редакт.
+                      </Link>
+                      <TableActionButton
+                        variant={product.isAvailable ? "warning" : "success"}
+                        onClick={() => handleToggleStatus(product.id, product.isAvailable)}
+                      >
+                        {product.isAvailable ? 'Выкл.' : 'Вкл.'}
+                      </TableActionButton>
+                    </div>
+                  </td>
+                </AnimatedTableRow>
+              ))}
+            </tbody>
+          </table>
         </div>
-      )}
-    </div>
+
+        {/* Сообщение о пустой таблице */}
+        {products.length === 0 && (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Продукты не найдены</h3>
+            <p className="text-gray-500 text-sm">
+              Создайте первый продукт или измените параметры фильтрации
+            </p>
+          </div>
+        )}
+
+        {/* Пагинация */}
+        {products.length > 0 && (
+          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+            <div className="text-sm text-gray-700">
+              Показано {products.length} из {products.length} продуктов
+            </div>
+            <div className="flex space-x-2">
+              {/* Кнопки пагинации можно добавить здесь */}
+            </div>
+          </div>
+        )}
+      </AnimatedTableContainer>
+    </>
   )
 }

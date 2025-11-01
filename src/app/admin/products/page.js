@@ -150,24 +150,7 @@ export default async function ProductsPage({ searchParams = {} }) {
         </div>
       )}
 
-      {/* Пустое состояние когда нет продуктов вообще */}
-      {filteredProducts.length === 0 && products.length === 0 && (
-        <div className="text-center py-20 animate-bounce">
-          <div className="w-32 h-32 bg-gradient-to-r from-green-100 to-blue-100 rounded-full mx-auto mb-6 flex items-center justify-center">
-            <svg className="w-16 h-16 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-            </svg>
-          </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">Нет продуктов</h3>
-          <p className="text-gray-600 mb-6">Создайте первый продукт чтобы начать работу</p>
-          <Link 
-            href="/admin/products/create"
-            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors inline-block animate-pulse"
-          >
-            Создать продукт
-          </Link>
-        </div>
-      )}
+      
 
       {/* Информация о фильтрации */}
       {(searchQuery || categoryFilter !== 'all' || statusFilter !== 'all') && filteredProducts.length > 0 && (

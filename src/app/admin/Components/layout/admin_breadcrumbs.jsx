@@ -27,7 +27,7 @@ export default function AdminBreadcrumbs() {
 
     // Добавляем главную страницу
     breadcrumbs.unshift({
-      href: '/',
+      href: '/admin',
       label: 'Главная',
       isLast: false
     })

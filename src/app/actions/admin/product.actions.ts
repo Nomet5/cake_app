@@ -8,107 +8,106 @@ import {
   createNewReviewNotification 
 } from './notification.actions'
 
+// Используем глобальный инстанс Prisma для лучшей производительности
 const prisma = new PrismaClient()
 
-// CREATE - Создание продукта
+// Типы для лучшей типобезопасности
+interface CreateProductData {
+  name: string;
+  description?: string;
+  price: number;
+  chefId: number;
+  categoryId?: number;
+  isAvailable?: boolean;
+}
+
+// Вспомогательная функция для валидации
+function validateProductData(data: Partial<CreateProductData>) {
+  const errors: string[] = [];
+  
+  if (!data.name?.trim()) errors.push('Название обязательно');
+  if (!data.price || data.price <= 0) errors.push('Цена должна быть больше 0');
+  if (!data.chefId) errors.push('Повар обязателен');
+  
+  return errors;
+}
+
+// CREATE - Создание продукта (улучшенная версия)
 export async function createProduct(formData: FormData) {
   try {
-    const name = formData.get("name") as string
-    const description = formData.get("description") as string
-    const price = parseFloat(formData.get("price") as string)
-    const chefId = parseInt(formData.get("chefId") as string)
-    const categoryId = formData.get("categoryId") ? parseInt(formData.get("categoryId") as string) : undefined
-    const isAvailable = formData.get("isAvailable") === 'true'
+    const productData: CreateProductData = {
+      name: formData.get("name") as string,
+      description: formData.get("description") as string,
+      price: parseFloat(formData.get("price") as string),
+      chefId: parseInt(formData.get("chefId") as string),
+      categoryId: formData.get("categoryId") ? parseInt(formData.get("categoryId") as string) : undefined,
+      isAvailable: formData.get("isAvailable") === 'true'
+    };
 
-    // Валидация данных
-    if (!name || !price || !chefId) {
-      return { error: 'Название, цена и повар обязательны' }
-    }
-
-    if (price <= 0) {
-      return { error: 'Цена должна быть больше 0' }
+    // Валидация
+    const validationErrors = validateProductData(productData);
+    if (validationErrors.length > 0) {
+      return { error: validationErrors.join(', ') };
     }
 
     // Проверяем существование повара
     const chef = await prisma.chef.findUnique({
-      where: { id: chefId },
-      include: {
-        user: {
-          select: {
-            firstName: true,
-            email: true
-          }
-        }
-      }
-    })
+      where: { id: productData.chefId },
+      include: { user: { select: { firstName: true, email: true } } }
+    });
 
     if (!chef) {
-      return { error: 'Повар не найден' }
+      return { error: 'Повар не найден' };
     }
 
-    // Проверяем активен ли повар
     if (!chef.isActive) {
-      return { error: 'Повар неактивен' }
+      return { error: 'Повар неактивен' };
     }
 
     // Проверяем категорию если указана
-    if (categoryId) {
+    if (productData.categoryId) {
       const category = await prisma.category.findUnique({
-        where: { id: categoryId }
-      })
+        where: { id: productData.categoryId }
+      });
       if (!category) {
-        return { error: 'Категория не найдена' }
+        return { error: 'Категория не найдена' };
       }
     }
 
     const product = await prisma.product.create({
-      data: {
-        name,
-        description,
-        price,
-        chefId,
-        categoryId,
-        isAvailable
-      },
+      data: productData,
       include: {
         chef: {
           select: {
             businessName: true,
-            user: {
-              select: {
-                firstName: true,
-                email: true
-              }
-            }
+            user: { select: { firstName: true, email: true } }
           }
         },
-        category: {
-          select: {
-            name: true
-          }
-        }
+        category: { select: { name: true } }
       }
-    })
+    });
 
-    // Создаем уведомление о новом продукте
+    // Уведомление
     await createSystemNotification(
       'Новый продукт',
-      `Повар "${chef.businessName}" добавил новый продукт: "${name}" за ${price} ₽`,
+      `Повар "${chef.businessName}" добавил новый продукт: "${productData.name}" за ${productData.price} ₽`,
       'MEDIUM'
-    )
+    );
 
-    revalidatePath('/admin/products')
-    revalidatePath(`/admin/chefs/${chefId}`)
-    revalidatePath('/products')
-    return { success: true, product }
+    // Ревалидация путей
+    revalidatePath('/admin/products');
+    revalidatePath(`/admin/chefs/${productData.chefId}`);
+    revalidatePath('/products');
+    
+    return { success: true, product };
   } catch (error) {
-    console.error('Error creating product:', error)
+    console.error('Error creating product:', error);
     await createSystemNotification(
       'Ошибка создания продукта',
-      `Произошла ошибка при создании продукта: ${error}`,
+      `Произошла ошибка при создании продукта: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`,
       'HIGH'
-    )
-    return { error: 'Ошибка при создании товара' }
+    );
+    return { error: 'Ошибка при создании товара' };
   }
 }
 

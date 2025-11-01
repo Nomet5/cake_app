@@ -1,3 +1,4 @@
+// app/admin/chefs/page.jsx
 import { getChefs, getChefStats } from "../../actions/admin/chef.actions"
 import ChefsTable from "./components/chefs-table"
 import ChefActions from "./create/components/chef-actions"
@@ -13,14 +14,34 @@ export default async function AdminChefsPage({ searchParams }) {
     sort = 'name'
   } = searchParams
 
-  // Получаем данные поваров и статистику
-  const [chefs, stats] = await Promise.all([
-    getChefs(),
-    getChefStats()
+  // Получаем данные поваров с фильтрами и статистику
+  const [chefsResult, stats] = await Promise.all([
+    getChefs({
+      search,
+      status,
+      specialization,
+      sort,
+      page: parseInt(page),
+      limit: 10
+    }),
+    getChefStats() // Используем getChefStats вместо getAdminChefStats
   ])
 
-  // Проверяем, что chefs - массив
-  const chefsArray = Array.isArray(chefs) ? chefs : []
+  // Обрабатываем результат
+  const chefs = chefsResult.success ? chefsResult.chefs : []
+  const pagination = chefsResult.success ? chefsResult.pagination : null
+  const error = chefsResult.error
+
+  // Дополняем статистику для админ-панели
+  const adminStats = {
+    ...stats,
+    // Добавляем дополнительные поля для админ-панели
+    newChefsThisMonth: 0, // Можно рассчитать на основе даты создания
+    chefsWithOrders: chefs.filter(chef => chef._count?.orders > 0).length,
+    activeChefsWithProducts: chefs.filter(chef => chef.isActive && chef._count?.products > 0).length,
+    orderCompletionRate: chefs.length > 0 ? 
+      Math.round((chefs.filter(chef => chef._count?.orders > 0).length / chefs.length) * 100) : 0
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -29,32 +50,50 @@ export default async function AdminChefsPage({ searchParams }) {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Управление поварами</h1>
           <p className="text-gray-600">
-            Всего поваров: {stats.total}
+            Всего поваров: {adminStats.total} • Активных: {adminStats.active} • Верифицировано: {adminStats.verified}
           </p>
         </div>
         <ChefActions />
       </div>
 
       {/* Общая статистика */}
-      <StatsOverview stats={stats} />
+      <StatsOverview stats={adminStats} />
 
       {/* Поиск и фильтры */}
       <SearchFilters 
         searchParams={searchParams}
-        totalResults={chefsArray.length}
+        totalResults={pagination?.totalItems || chefs.length}
       />
+
+      {/* Сообщение об ошибке */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-red-800">{error}</span>
+          </div>
+        </div>
+      )}
 
       {/* Таблица поваров */}
       <ChefsTable 
-        chefs={chefsArray}
+        chefs={chefs}
         currentSort={sort}
+        pagination={pagination}
       />
 
       {/* Информация о результате */}
       <div className="flex justify-between items-center text-sm text-gray-500">
         <div>
-          Показано {chefsArray.length} поваров
+          Показано {chefs.length} из {pagination?.totalItems || 0} поваров
         </div>
+        {pagination && (
+          <div className="text-xs">
+            Страница {pagination.currentPage} из {pagination.totalPages}
+          </div>
+        )}
       </div>
     </div>
   )

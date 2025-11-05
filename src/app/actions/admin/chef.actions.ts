@@ -7,64 +7,91 @@ import { createNotification } from './notification.actions'
 
 const prisma = new PrismaClient()
 
-// CREATE - Создание повара с уведомлением
+// CREATE - Создание повара с уведомлением (создает пользователя и повара)
 export async function createChef(formData: FormData) {
   try {
-    const businessName = formData.get("businessName") as string
+    // Извлекаем данные из FormData
+    const name = formData.get("name") as string
+    const email = formData.get("email") as string
+    const phone = formData.get("phone") as string
+    const specialization = formData.get("specialization") as string
+    const experience = formData.get("experience") as string
+    const status = formData.get("status") as string
     const description = formData.get("description") as string
-    const specialty = formData.get("specialty") as string
-    const yearsOfExperience = formData.get("yearsOfExperience") ? parseInt(formData.get("yearsOfExperience") as string) : undefined
-    const userId = parseInt(formData.get("userId") as string)
-    const isActive = formData.get("isActive") === 'true'
-    const isVerified = formData.get("isVerified") === 'true'
+    const address = formData.get("address") as string
+    const avatar = formData.get("avatar") as string
+    const password = formData.get("password") as string
 
     console.log('Creating chef with data:', {
-      businessName,
+      name,
+      email,
+      phone,
+      specialization,
+      experience,
+      status,
       description,
-      specialty,
-      yearsOfExperience,
-      userId,
-      isActive,
-      isVerified
+      address,
+      avatar
     })
 
     // Валидация данных
-    if (!businessName || !userId) {
-      return { error: 'Название бизнеса и пользователь обязательны' }
+    if (!name || !email || !password) {
+      return { error: 'Имя, email и пароль обязательны' }
     }
 
-    // Проверяем существует ли пользователь
-    const user = await prisma.user.findUnique({
-      where: { id: userId }
+    // Проверяем не существует ли уже пользователь с таким email
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
     })
 
-    if (!user) {
-      return { error: 'Пользователь не найден' }
+    if (existingUser) {
+      return { error: 'Пользователь с таким email уже существует' }
     }
 
-    // Проверяем не является ли пользователь уже поваром
-    const existingChef = await prisma.chef.findUnique({
-      where: { userId }
+    // Хешируем пароль
+    const passwordHash = await hashPassword(password)
+
+    // Разбиваем имя на firstName и lastName (берем только первое слово как firstName)
+    const firstName = name.split(' ')[0] || name
+
+    // Создаем пользователя
+    const user = await prisma.user.create({
+      data: {
+        firstName,
+        email,
+        phone: phone || null,
+        passwordHash,
+        // role не указан в модели, поэтому не передаем
+        // isActive не указан в модели, поэтому не передаем  
+        // avatar не указан в модели, поэтому не передаем
+      }
     })
 
-    if (existingChef) {
-      return { error: 'Этот пользователь уже является поваром' }
+    console.log('User created successfully:', user.id)
+
+    // Преобразуем опыт работы в yearsOfExperience
+    let yearsOfExperience: number | null = null
+    if (experience) {
+      const experienceMap: { [key: string]: number } = {
+        'Менее 1 года': 1,
+        '1-3 года': 2,
+        '3-5 лет': 4,
+        '5-10 лет': 7,
+        'Более 10 лет': 12
+      }
+      yearsOfExperience = experienceMap[experience] || null
     }
 
+    // Создаем повара
     const chefData = {
-      businessName,
-      description,
+      businessName: name, // Используем полное имя как название бизнеса
+      description: description || null,
+      specialty: specialization || null,
       yearsOfExperience,
-      userId,
-      isActive,
-      isVerified
+      userId: user.id,
+      isActive: status === 'active',
+      isVerified: status === 'active'
     }
-
-    // Добавляем specialty только если поле существует в базе
-    // Раскомментируйте когда добавите поле в базу:
-    // if (specialty) {
-    //   chefData.specialty = specialty
-    // }
 
     const chef = await prisma.chef.create({
       data: chefData,
@@ -72,7 +99,8 @@ export async function createChef(formData: FormData) {
         user: {
           select: {
             firstName: true,
-            email: true
+            email: true,
+            phone: true
           }
         }
       }
@@ -85,7 +113,7 @@ export async function createChef(formData: FormData) {
       type: NotificationType.USER,
       priority: NotificationPriority.HIGH,
       title: 'Новый повар зарегистрирован',
-      message: `Пользователь ${user.firstName} зарегистрировал бизнес "${businessName}" как повар`,
+      message: `Создан новый профиль повара "${name}"`,
       data: {
         chefId: chef.id,
         businessName: chef.businessName,
@@ -104,6 +132,17 @@ export async function createChef(formData: FormData) {
     return { error: 'Ошибка при создании повара: ' + (error as Error).message }
   }
 }
+
+// Функция для хеширования пароля
+async function hashPassword(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
 
 // UPDATE - Обновление повара с уведомлением
 export async function updateChef(id: number, formData: FormData) {
@@ -211,19 +250,15 @@ export async function updateChef(id: number, formData: FormData) {
 export async function verifyChef(id: number) {
   try {
     const chef = await prisma.chef.findUnique({
-      where: { id },
-      include: {
-        user: {
-          select: {
-            firstName: true,
-            email: true
-          }
-        }
-      }
+      where: { id }
     })
 
     if (!chef) {
       return { error: 'Повар не найден' }
+    }
+
+    if (chef.isVerified) {
+      return { error: 'Повар уже верифицирован' }
     }
 
     const updatedChef = await prisma.chef.update({
@@ -234,16 +269,15 @@ export async function verifyChef(id: number) {
       }
     })
 
-    // СОЗДАЕМ УВЕДОМЛЕНИЕ о верификации повара
+    // СОЗДАЕМ УВЕДОМЛЕНИЕ о верификации
     await createNotification({
       type: NotificationType.USER,
       priority: NotificationPriority.HIGH,
       title: 'Повар верифицирован',
-      message: `Повар "${chef.businessName}" успешно прошел верификацию`,
+      message: `Повар "${chef.businessName}" успешно верифицирован`,
       data: {
         chefId: chef.id,
         businessName: chef.businessName,
-        userId: chef.userId,
         action: 'CHEF_VERIFIED'
       },
       actionUrl: `/admin/chefs/${chef.id}`
@@ -346,6 +380,46 @@ export async function updateChefStatus(id: number, isActive: boolean) {
   }
 }
 
+// BULK UPDATE CHEFS - Массовое обновление поваров с уведомлением
+export async function bulkUpdateChefs(chefIds: number[], isActive: boolean) {
+  try {
+    const result = await prisma.chef.updateMany({
+      where: {
+        id: {
+          in: chefIds
+        }
+      },
+      data: {
+        isActive,
+        updatedAt: new Date()
+      }
+    })
+
+    // СОЗДАЕМ УВЕДОМЛЕНИЕ о массовом обновлении
+    if (result.count > 0) {
+      await createNotification({
+        type: NotificationType.USER,
+        priority: NotificationPriority.MEDIUM,
+        title: 'Массовое обновление поваров',
+        message: `${result.count} поваров ${isActive ? 'активированы' : 'деактивированы'}`,
+        data: {
+          chefIds,
+          updatedCount: result.count,
+          action: 'CHEF_BULK_UPDATE',
+          newStatus: isActive ? 'ACTIVE' : 'INACTIVE'
+        }
+      })
+    }
+
+    revalidatePath('/admin/chefs')
+    revalidatePath('/chefs')
+    return { success: true, updatedCount: result.count }
+  } catch (error) {
+    console.error('Error bulk updating chefs:', error)
+    return { error: 'Ошибка при массовом обновлении поваров' }
+  }
+}
+
 // DELETE - Удаление повара с уведомлением
 export async function deleteChef(id: number) {
   try {
@@ -411,82 +485,161 @@ export async function deleteChef(id: number) {
   }
 }
 
-// BULK UPDATE CHEFS - Массовое обновление поваров с уведомлением
-export async function bulkUpdateChefs(chefIds: number[], isActive: boolean) {
+// READ (List) - Получение списка поваров
+export async function getChefs(options: {
+  search?: string;
+  status?: string;
+  specialization?: string;
+  sort?: string;
+  page?: number;
+  limit?: number;
+} = {}) {
   try {
-    const result = await prisma.chef.updateMany({
-      where: {
-        id: {
-          in: chefIds
-        }
-      },
-      data: {
-        isActive,
-        updatedAt: new Date()
-      }
-    })
+    const {
+      search = '',
+      status = '',
+      specialization = '',
+      sort = 'name',
+      page = 1,
+      limit = 10
+    } = options
 
-    // СОЗДАЕМ УВЕДОМЛЕНИЕ о массовом обновлении
-    if (result.count > 0) {
-      await createNotification({
-        type: NotificationType.USER,
-        priority: NotificationPriority.MEDIUM,
-        title: 'Массовое обновление поваров',
-        message: `${result.count} поваров ${isActive ? 'активированы' : 'деактивированы'}`,
-        data: {
-          chefIds,
-          updatedCount: result.count,
-          action: 'CHEF_BULK_UPDATE',
-          newStatus: isActive ? 'ACTIVE' : 'INACTIVE'
+    const skip = (page - 1) * limit
+
+    // Базовые условия для запроса
+    const where: any = {}
+
+    // Поиск по названию бизнеса, email или имени пользователя
+    if (search) {
+      const searchLower = search.toLowerCase()
+      where.OR = [
+        { 
+          businessName: { 
+            contains: searchLower
+          } 
+        },
+        { 
+          user: { 
+            email: { 
+              contains: searchLower
+            } 
+          } 
+        },
+        { 
+          user: { 
+            firstName: { 
+              contains: searchLower
+            } 
+          } 
         }
-      })
+      ]
     }
 
-    revalidatePath('/admin/chefs')
-    revalidatePath('/chefs')
-    return { success: true, updatedCount: result.count }
-  } catch (error) {
-    console.error('Error bulk updating chefs:', error)
-    return { error: 'Ошибка при массовом обновлении поваров' }
-  }
-}
+    // Фильтр по статусу - КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ
+    if (status) {
+      if (status === 'active') {
+        where.isActive = true
+      } else if (status === 'inactive') {
+        where.isActive = false
+      } else if (status === 'pending') {
+        // "На проверке" - активные но не верифицированные
+        where.isActive = true
+        where.isVerified = false
+      } else if (status === 'verified') {
+        // Верифицированные - активные и верифицированные
+        where.isActive = true
+        where.isVerified = true
+      }
+    }
 
-// Остальные функции остаются без изменений
-// READ (List) - Получение списка поваров
-export async function getChefs() {
-  try {
-    const chefs = await prisma.chef.findMany({
-      include: {
-        user: {
-          select: {
-            email: true,
-            firstName: true,
-            phone: true
+    // Фильтр по специализации
+    if (specialization) {
+      where.specialty = { 
+        contains: specialization.toLowerCase()
+      }
+    }
+
+    // Сортировка
+    const orderBy: any = {}
+    if (sort === 'name') {
+      orderBy.businessName = 'asc'
+    } else if (sort === 'name_desc') {
+      orderBy.businessName = 'desc'
+    } else if (sort === 'createdAt_desc') {
+      orderBy.createdAt = 'desc'
+    } else if (sort === 'createdAt') {
+      orderBy.createdAt = 'asc'
+    } else if (sort === 'products') {
+      // Сортировка по количеству товаров
+      orderBy.products = { _count: 'desc' }
+    } else if (sort === 'products_desc') {
+      orderBy.products = { _count: 'asc' }
+    } else {
+      // По умолчанию сортируем по имени
+      orderBy.businessName = 'asc'
+    }
+
+    console.log('Where conditions:', JSON.stringify(where, null, 2))
+    console.log('Order by:', JSON.stringify(orderBy, null, 2))
+
+    const [chefs, totalCount] = await Promise.all([
+      prisma.chef.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              firstName: true,
+              email: true,
+              phone: true
+            }
+          },
+          _count: {
+            select: {
+              products: true,
+              orders: true,
+              reviews: true
+            }
           }
         },
-        _count: {
-          select: {
-            products: true,
-            orders: true,
-            reviews: true
-          }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    })
+        orderBy,
+        skip,
+        take: limit,
+      }),
+      prisma.chef.count({ where })
+    ])
 
-    return chefs || []
+    console.log(`Found ${chefs.length} chefs with status: ${status}`)
+
+    const totalPages = Math.ceil(totalCount / limit)
+
+    return {
+      success: true,
+      chefs,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems: totalCount,
+        itemsPerPage: limit,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      }
+    }
   } catch (error) {
     console.error('Error fetching chefs:', error)
-    return []
+    return {
+      success: false,
+      error: 'Ошибка при загрузке поваров: ' + (error as Error).message,
+      chefs: [],
+      pagination: null
+    }
   }
 }
 
 // READ (Single) - Получение повара по ID
-export async function getChefById(id: number) {
+export async function getChefById(id: string) { 
   try {
     const chef = await prisma.chef.findUnique({
-      where: { id },
+      where: { id: parseInt(id) }, // Convert string to number
       include: {
         user: true,
         products: {
@@ -531,7 +684,7 @@ export async function getChefById(id: number) {
     })
 
     if (!chef) {
-      return { error: 'Повар не найден' }
+      return { error: 'Chef not found' }
     }
 
     return { success: true, chef }
@@ -778,6 +931,50 @@ export async function getChefStats() {
       withProducts: 0,
       totalProducts: 0,
       averageProducts: 0
+    }
+  }
+}
+
+export async function getChefStatusStats() {
+  try {
+    const [activeVerified, activeNotVerified, inactive] = await Promise.all([
+      // Активные и верифицированные
+      prisma.chef.count({
+        where: {
+          isActive: true,
+          isVerified: true
+        }
+      }),
+      // Активные но не верифицированные (на проверке)
+      prisma.chef.count({
+        where: {
+          isActive: true,
+          isVerified: false
+        }
+      }),
+      // Неактивные
+      prisma.chef.count({
+        where: {
+          isActive: false
+        }
+      })
+    ])
+
+    return {
+      active: activeVerified + activeNotVerified,
+      inactive: inactive,
+      pending: activeNotVerified,
+      verified: activeVerified,
+      total: activeVerified + activeNotVerified + inactive
+    }
+  } catch (error) {
+    console.error('Error fetching chef status stats:', error)
+    return {
+      active: 0,
+      inactive: 0,
+      pending: 0,
+      verified: 0,
+      total: 0
     }
   }
 }

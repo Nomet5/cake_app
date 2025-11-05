@@ -7,8 +7,7 @@ import {
   AnimatedList,
   FloatingElement,
   SubtleHover,
-  AnimatedCounter,
-  AnimatedButton
+  AnimatedCounter
 } from '../../Components/animation-component'
 
 export default function ChefProducts({ chefId }) {
@@ -70,6 +69,47 @@ export default function ChefProducts({ chefId }) {
           </svg>
         ))}
       </div>
+    )
+  }
+
+  // Простая кнопка для замены AnimatedButton
+  const SimpleButton = ({ 
+    href, 
+    onClick, 
+    children, 
+    variant = 'primary', 
+    size = 'md',
+    className = '',
+    ...props 
+  }) => {
+    const baseClasses = "inline-flex items-center justify-center font-medium rounded-lg transition-all duration-300 focus:outline-none focus:ring-4"
+    
+    const sizeClasses = {
+      sm: "px-3 py-2 text-sm",
+      md: "px-4 py-2.5 text-sm",
+      lg: "px-6 py-3 text-base"
+    }
+    
+    const variantClasses = {
+      primary: "bg-blue-500 text-white hover:bg-blue-600 focus:ring-blue-200",
+      success: "bg-green-500 text-white hover:bg-green-600 focus:ring-green-200",
+      secondary: "bg-gray-200 text-gray-700 hover:bg-gray-300 focus:ring-gray-200"
+    }
+
+    const buttonClasses = `${baseClasses} ${sizeClasses[size]} ${variantClasses[variant]} ${className}`
+
+    if (href) {
+      return (
+        <Link href={href} className={buttonClasses} {...props}>
+          {children}
+        </Link>
+      )
+    }
+
+    return (
+      <button onClick={onClick} className={buttonClasses} {...props}>
+        {children}
+      </button>
     )
   }
 
@@ -157,7 +197,7 @@ export default function ChefProducts({ chefId }) {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center">
               <h4 className="text-lg font-semibold text-gray-900 flex items-center">
-                <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse-gentle"></span>
+                <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
                 Последние продукты
               </h4>
               <span className="ml-3 text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
@@ -165,8 +205,7 @@ export default function ChefProducts({ chefId }) {
               </span>
             </div>
             
-            <AnimatedButton
-              as={Link}
+            <SimpleButton
               href={`/admin/products?chef=${chefId}`}
               variant="primary"
               size="sm"
@@ -181,7 +220,7 @@ export default function ChefProducts({ chefId }) {
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
-            </AnimatedButton>
+            </SimpleButton>
           </div>
           
           <AnimatedList
@@ -192,7 +231,7 @@ export default function ChefProducts({ chefId }) {
             renderItem={(product, index) => (
               <FloatingElement speed="normal" key={product.id}>
                 <SubtleHover>
-                  <div className="bg-white rounded-xl border-2 border-gray-200 p-4 hover-lift hover-glow transition-all duration-300 group h-full flex flex-col">
+                  <div className="bg-white rounded-xl border-2 border-gray-200 p-4 hover:shadow-lg transition-all duration-300 group h-full flex flex-col">
                     {/* Изображение продукта */}
                     <div className="h-40 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg mb-4 flex items-center justify-center overflow-hidden relative">
                       {product.image ? (
@@ -277,8 +316,7 @@ export default function ChefProducts({ chefId }) {
           {/* Кнопка добавления нового продукта */}
           <AnimatedContainer animation="fadeInUp" delay={500} duration="normal">
             <div className="mt-6 pt-6 border-t border-gray-200">
-              <AnimatedButton
-                as={Link}
+              <SimpleButton
                 href={`/admin/products/create?chef=${chefId}`}
                 variant="success"
                 size="md"
@@ -288,7 +326,7 @@ export default function ChefProducts({ chefId }) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
                 Добавить новый продукт
-              </AnimatedButton>
+              </SimpleButton>
             </div>
           </AnimatedContainer>
         </div>
@@ -309,8 +347,7 @@ export default function ChefProducts({ chefId }) {
             <p className="text-gray-500 text-sm mb-6">
               У этого повара еще нет добавленных продуктов
             </p>
-            <AnimatedButton
-              as={Link}
+            <SimpleButton
               href={`/admin/products/create?chef=${chefId}`}
               variant="primary"
               size="sm"
@@ -319,7 +356,7 @@ export default function ChefProducts({ chefId }) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
               Добавить первый продукт
-            </AnimatedButton>
+            </SimpleButton>
           </div>
         </AnimatedContainer>
       )}

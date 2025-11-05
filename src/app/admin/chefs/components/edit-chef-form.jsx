@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { updateChef } from "../../../../../actions/admin/chefs.actions"
+import { updateChef } from "../../../actions/admin/chef.actions"
 import ChefImageUpload from "./chef-image-upload"
 import { 
   AnimatedContainer, 
@@ -10,7 +10,7 @@ import {
   FloatingElement,
   AnimatedCard,
   SubtleHover
-} from "../../../../components/ux/animations"
+} from "../../../admin/Components/animation-component"
 
 export default function EditChefForm({ chef }) {
   const router = useRouter()

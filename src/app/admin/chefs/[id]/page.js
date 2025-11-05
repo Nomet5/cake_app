@@ -6,7 +6,7 @@ import ChefOrders from "../components/chef-orders"
 import ChefReviews from "../components/chef-reviews"
 import ChefStats from "../components/chef-stats"
 import BackButton from "../../components/back-button"
-import ChefActions from "../create/components/chef-actions"
+import ChefActions from "../create/components/chef-actions" // Исправлен импорт
 
 export default async function ChefDetailPage({ params }) {
   // Добавляем проверку на существование params.id
@@ -54,7 +54,7 @@ export default async function ChefDetailPage({ params }) {
         </div>
         
         {/* Используем Client Component для действий */}
-        <ChefActionsClient chef={chef} />
+        <ChefActions chef={chef} /> {/* Исправлено на ChefActions */}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

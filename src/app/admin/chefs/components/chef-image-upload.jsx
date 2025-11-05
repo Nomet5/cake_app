@@ -7,7 +7,7 @@ import {
   AnimatedButton,
   FloatingElement,
   SubtleHover 
-} from '../Components/animation-component'
+} from '../../Components/animation-component'
 
 export default function ChefImageUpload({ currentImage, onImageChange, chefName }) {
   const [isUploading, setIsUploading] = useState(false)

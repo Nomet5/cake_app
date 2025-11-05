@@ -1,10 +1,16 @@
 import { notFound } from 'next/navigation'
-import { getAdminChef } from "../../../../../actions/admin/chefs.actions"
-import EditChefForm from "./components/edit-chef-form"
+import { getChefById } from "../../../../actions/admin/chef.actions"
+import EditChefForm from "../../components/edit-chef-form"
 import BackButton from "../../../components/back-button"
 
 export default async function EditChefPage({ params }) {
-  const result = await getAdminChef(params.id)
+  // Validate that ID is a valid number
+  const chefId = parseInt(params.id)
+  if (isNaN(chefId)) {
+    notFound()
+  }
+
+  const result = await getChefById(params.id)
 
   if (!result.success) {
     if (result.error === 'Chef not found') {

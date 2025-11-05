@@ -4,6 +4,7 @@ import ChefsTable from "./components/chefs-table"
 import ChefActions from "./create/components/chef-actions"
 import SearchFilters from "./components/search-filters"
 import StatsOverview from "./components/stats-overview"
+import CreateChefButton from "./components/create-chef-button"
 
 export default async function AdminChefsPage({ searchParams }) {
   const { 
@@ -14,7 +15,9 @@ export default async function AdminChefsPage({ searchParams }) {
     sort = 'name'
   } = searchParams
 
-  // Получаем данные поваров с фильтрами и статистику
+  console.log('Search params:', { search, status, specialization, sort, page })
+
+  // Получаем данные поваров с фильтрами
   const [chefsResult, stats] = await Promise.all([
     getChefs({
       search,
@@ -24,19 +27,22 @@ export default async function AdminChefsPage({ searchParams }) {
       page: parseInt(page),
       limit: 10
     }),
-    getChefStats() // Используем getChefStats вместо getAdminChefStats
+    getChefStats()
   ])
+
+  console.log('Chefs result:', chefsResult)
 
   // Обрабатываем результат
   const chefs = chefsResult.success ? chefsResult.chefs : []
   const pagination = chefsResult.success ? chefsResult.pagination : null
   const error = chefsResult.error
 
-  // Дополняем статистику для админ-панели
+  // Статистика для админ-панели
   const adminStats = {
-    ...stats,
-    // Добавляем дополнительные поля для админ-панели
-    newChefsThisMonth: 0, // Можно рассчитать на основе даты создания
+    total: pagination?.totalItems || 0,
+    active: stats?.active || 0,
+    verified: stats?.verified || 0,
+    newChefsThisMonth: 0,
     chefsWithOrders: chefs.filter(chef => chef._count?.orders > 0).length,
     activeChefsWithProducts: chefs.filter(chef => chef.isActive && chef._count?.products > 0).length,
     orderCompletionRate: chefs.length > 0 ? 
@@ -53,16 +59,16 @@ export default async function AdminChefsPage({ searchParams }) {
             Всего поваров: {adminStats.total} • Активных: {adminStats.active} • Верифицировано: {adminStats.verified}
           </p>
         </div>
-        <ChefActions />
+        <CreateChefButton />
       </div>
 
       {/* Общая статистика */}
       <StatsOverview stats={adminStats} />
 
-      {/* Поиск и фильтры */}
-      <SearchFilters 
+      {/* Фильтры */}
+      < SearchFilters
         searchParams={searchParams}
-        totalResults={pagination?.totalItems || chefs.length}
+        totalResults={pagination?.totalItems || 0}
       />
 
       {/* Сообщение об ошибке */}

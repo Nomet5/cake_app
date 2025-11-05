@@ -4,18 +4,30 @@
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { AnimatedContainer, AnimatedButton, FloatingElement } from '../../Components/animation-component'
+import { getChefStatusStats } from '../../../actions/admin/chef.actions'
 
 export default function ChefsFilters({ totalResults }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   
   const [filters, setFilters] = useState({
-    search: searchParams?.get('search') || '',
-    status: searchParams?.get('status') || '',
-    specialization: searchParams?.get('specialization') || '',
-    sort: searchParams?.get('sort') || 'name'
+    search: '',
+    status: '',
+    specialization: '',
+    sort: 'name'
   })
 
+  const [statusStats, setStatusStats] = useState({
+    active: 0,
+    inactive: 0,
+    pending: 0,
+    verified: 0,
+    total: 0
+  })
+
+  const [loading, setLoading] = useState(false)
+
+  // Инициализация фильтров из URL параметров
   useEffect(() => {
     setFilters({
       search: searchParams?.get('search') || '',
@@ -25,20 +37,50 @@ export default function ChefsFilters({ totalResults }) {
     })
   }, [searchParams])
 
+  // Загружаем статистику по статусам
+  useEffect(() => {
+    const loadStatusStats = async () => {
+      try {
+        setLoading(true)
+        const stats = await getChefStatusStats()
+        setStatusStats(stats)
+      } catch (error) {
+        console.error('Error loading status stats:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadStatusStats()
+  }, [])
+
   const handleFilterChange = (key, value) => {
     const newFilters = { ...filters, [key]: value }
     setFilters(newFilters)
     
-    const params = new URLSearchParams(searchParams?.toString() || '')
+    // Создаем новый URLSearchParams
+    const params = new URLSearchParams()
+    
+    // Добавляем только заполненные фильтры (кроме значения по умолчанию для сортировки)
     Object.entries(newFilters).forEach(([k, v]) => {
-      if (v && v !== 'name') {
-        params.set(k, v)
-      } else {
-        params.delete(k)
+      if (v && v.trim() !== '') {
+        // Для сортировки не добавляем значение по умолчанию
+        if (k === 'sort' && v === 'name') {
+          params.delete(k)
+        } else {
+          params.set(k, v)
+        }
       }
     })
     
-    router.push(`/admin/chefs?${params.toString()}`)
+    // Удаляем параметр page при изменении фильтров (возвращаем на первую страницу)
+    params.delete('page')
+    
+    // Формируем URL
+    const queryString = params.toString()
+    const url = queryString ? `/admin/chefs?${queryString}` : '/admin/chefs'
+    
+    router.push(url)
   }
 
   const clearFilters = () => {
@@ -50,11 +92,11 @@ export default function ChefsFilters({ totalResults }) {
 
   const filterOptions = {
     status: [
-      { value: '', label: 'Все статусы', icon: '🌐' },
-      { value: 'active', label: 'Активен', icon: '✅' },
-      { value: 'inactive', label: 'Неактивен', icon: '⏸️' },
-      { value: 'pending', label: 'На проверке', icon: '⏳' },
-      { value: 'banned', label: 'Заблокирован', icon: '🚫' }
+      { value: '', label: 'Все статусы', icon: '🌐', count: statusStats.total },
+      { value: 'active', label: 'Активен', icon: '✅', count: statusStats.active },
+      { value: 'inactive', label: 'Неактивен', icon: '⏸️', count: statusStats.inactive },
+      { value: 'pending', label: 'На проверке', icon: '⏳', count: statusStats.pending },
+      { value: 'verified', label: 'Верифицирован', icon: '⭐', count: statusStats.verified }
     ],
     specialization: [
       { value: '', label: 'Все специализации', icon: '🍽️' },
@@ -68,10 +110,10 @@ export default function ChefsFilters({ totalResults }) {
     sort: [
       { value: 'name', label: 'По имени (А-Я)', icon: '🔤' },
       { value: 'name_desc', label: 'По имени (Я-А)', icon: '🔠' },
-      { value: 'rating', label: 'По рейтингу (↑)', icon: '⭐' },
-      { value: 'rating_desc', label: 'По рейтингу (↓)', icon: '🌟' },
-      { value: 'joined', label: 'По дате (новые)', icon: '🆕' },
-      { value: 'joined_desc', label: 'По дате (старые)', icon: '📅' }
+      { value: 'createdAt_desc', label: 'По дате (новые)', icon: '🆕' },
+      { value: 'createdAt', label: 'По дате (старые)', icon: '📅' },
+      { value: 'products', label: 'По товарам (много)', icon: '📦' },
+      { value: 'products_desc', label: 'По товарам (мало)', icon: '📥' }
     ]
   }
 
@@ -80,7 +122,7 @@ export default function ChefsFilters({ totalResults }) {
       active: 'Активен',
       inactive: 'Неактивен',
       pending: 'На проверке',
-      banned: 'Заблокирован'
+      verified: 'Верифицирован'
     }
     return statusLabels[status] || status
   }
@@ -92,7 +134,7 @@ export default function ChefsFilters({ totalResults }) {
         {/* Поиск */}
         <AnimatedContainer animation="fadeInUp" delay={0} duration="normal">
           <FloatingElement speed="normal">
-            <div className="bg-white rounded-xl border-2 border-blue-200 p-4 hover-lift hover-glow transition-all duration-300 shadow-sm hover:shadow-md">
+            <div className="bg-white rounded-xl border-2 border-blue-200 p-4 hover-lift transition-all duration-300 shadow-sm hover:shadow-md">
               <label htmlFor="search" className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
                 <span className="text-lg mr-2">🔍</span>
                 Поиск поваров
@@ -102,7 +144,7 @@ export default function ChefsFilters({ totalResults }) {
                 id="search"
                 value={filters.search}
                 onChange={(e) => handleFilterChange('search', e.target.value)}
-                placeholder="Имя, email..."
+                placeholder="Имя, email, специализация..."
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
               />
             </div>
@@ -112,7 +154,7 @@ export default function ChefsFilters({ totalResults }) {
         {/* Статус */}
         <AnimatedContainer animation="fadeInUp" delay={100} duration="normal">
           <FloatingElement speed="normal">
-            <div className="bg-white rounded-xl border-2 border-green-200 p-4 hover-lift hover-glow transition-all duration-300 shadow-sm hover:shadow-md">
+            <div className="bg-white rounded-xl border-2 border-green-200 p-4 hover-lift transition-all duration-300 shadow-sm hover:shadow-md">
               <label htmlFor="status" className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
                 <span className="text-lg mr-2">📊</span>
                 Статус повара
@@ -125,7 +167,7 @@ export default function ChefsFilters({ totalResults }) {
               >
                 {filterOptions.status.map(option => (
                   <option key={option.value} value={option.value}>
-                    {option.icon} {option.label}
+                    {option.icon} {option.label} {option.count !== undefined && `(${option.count})`}
                   </option>
                 ))}
               </select>
@@ -136,7 +178,7 @@ export default function ChefsFilters({ totalResults }) {
         {/* Специализация */}
         <AnimatedContainer animation="fadeInUp" delay={200} duration="normal">
           <FloatingElement speed="normal">
-            <div className="bg-white rounded-xl border-2 border-purple-200 p-4 hover-lift hover-glow transition-all duration-300 shadow-sm hover:shadow-md">
+            <div className="bg-white rounded-xl border-2 border-purple-200 p-4 hover-lift transition-all duration-300 shadow-sm hover:shadow-md">
               <label htmlFor="specialization" className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
                 <span className="text-lg mr-2">🎯</span>
                 Специализация
@@ -160,7 +202,7 @@ export default function ChefsFilters({ totalResults }) {
         {/* Сортировка */}
         <AnimatedContainer animation="fadeInUp" delay={300} duration="normal">
           <FloatingElement speed="normal">
-            <div className="bg-white rounded-xl border-2 border-orange-200 p-4 hover-lift hover-glow transition-all duration-300 shadow-sm hover:shadow-md">
+            <div className="bg-white rounded-xl border-2 border-orange-200 p-4 hover-lift transition-all duration-300 shadow-sm hover:shadow-md">
               <label htmlFor="sort" className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
                 <span className="text-lg mr-2">🔄</span>
                 Сортировка
@@ -262,21 +304,33 @@ export default function ChefsFilters({ totalResults }) {
             Быстрые фильтры по статусам
           </h5>
           <div className="flex gap-2 flex-wrap">
-            {filterOptions.status.slice(1).map((status, index) => (
+            {filterOptions.status.slice(1).map((status) => (
               <button
                 key={status.value}
                 onClick={() => handleFilterChange('status', status.value)}
+                disabled={status.count === 0}
                 className={`
                   px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300
-                  flex items-center border
+                  flex items-center border relative
                   ${filters.status === status.value
                     ? 'bg-orange-500 text-white border-orange-500 shadow-md transform scale-105'
+                    : status.count === 0
+                    ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
                     : 'bg-white text-gray-600 border-gray-300 hover:bg-orange-50 hover:border-orange-300 hover:scale-105'
                   }
                 `}
               >
                 <span className="mr-1.5">{status.icon}</span>
                 {status.label}
+                <span className={`ml-2 px-1.5 py-0.5 rounded-full text-xs ${
+                  filters.status === status.value
+                    ? 'bg-orange-600 text-white'
+                    : status.count === 0
+                    ? 'bg-gray-300 text-gray-500'
+                    : 'bg-gray-200 text-gray-600'
+                }`}>
+                  {status.count}
+                </span>
               </button>
             ))}
           </div>

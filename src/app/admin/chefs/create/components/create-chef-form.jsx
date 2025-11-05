@@ -70,7 +70,23 @@ export default function CreateChefForm() {
     setIsLoading(true)
 
     try {
-      const result = await createChef(formData)
+      // Создаем FormData объект
+      const formDataToSend = new FormData()
+      
+      // Добавляем все поля в FormData
+      formDataToSend.append('name', formData.name)
+      formDataToSend.append('email', formData.email)
+      formDataToSend.append('phone', formData.phone || '')
+      formDataToSend.append('specialization', formData.specialization)
+      formDataToSend.append('experience', formData.experience)
+      formDataToSend.append('status', formData.status)
+      formDataToSend.append('description', formData.description || '')
+      formDataToSend.append('address', formData.address || '')
+      formDataToSend.append('avatar', formData.avatar || '')
+      formDataToSend.append('password', formData.password)
+      formDataToSend.append('confirmPassword', formData.confirmPassword)
+
+      const result = await createChef(formDataToSend)
       
       if (result.success) {
         router.push(`/admin/chefs/${result.chef.id}`)
@@ -312,6 +328,7 @@ export default function CreateChefForm() {
                   disabled={isLoading}
                   className={getInputClasses('password')}
                   placeholder="Минимум 6 символов"
+                  autoComplete="new-password" 
                 />
                 {errors.password && (
                   <p className="mt-2 text-sm text-red-600 flex items-center">
@@ -336,6 +353,7 @@ export default function CreateChefForm() {
                   disabled={isLoading}
                   className={getInputClasses('confirmPassword')}
                   placeholder="Повторите пароль"
+                  autoComplete="new-password"   
                 />
                 {errors.confirmPassword && (
                   <p className="mt-2 text-sm text-red-600 flex items-center">

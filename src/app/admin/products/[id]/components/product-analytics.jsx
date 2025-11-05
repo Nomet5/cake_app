@@ -7,7 +7,7 @@ import {
   FloatingElement,
   SubtleHover,
   AnimatedButton 
-} from '../../../../Components/animation-component'
+} from '../../../Components/animation-component'
 
 export default function ProductAnalytics({ product }) {
   const calculateAverageRating = () => {

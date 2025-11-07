@@ -1,9 +1,10 @@
-// app/admin/chefs/components/create-chef-form.jsx
+// app/admin/chefs/components/create-chef-from-user.jsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createChef } from "../../../../actions/admin/chef.actions"
+import { createChefFromUser } from "../../../../actions/admin/chef.actions"
+import { getUserById, getUsers } from "../../../../actions/admin/user.actions"
 import ChefImageUpload from "./chef-image-upload"
 import { 
   AnimatedContainer, 
@@ -11,14 +12,14 @@ import {
   FloatingElement,
 } from '../../../Components/animation-component'
 
-export default function CreateChefForm() {
+export default function CreateChefForm({ onBack }) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
-    specialization: '',
+    specialty: '', // изменено с specialization
     experience: '',
     status: 'pending',
     description: '',
@@ -42,8 +43,8 @@ export default function CreateChefForm() {
       newErrors.email = 'Некорректный email'
     }
 
-    if (!formData.specialization.trim()) {
-      newErrors.specialization = 'Специализация обязательна'
+    if (!formData.specialty.trim()) {
+      newErrors.specialty = 'Специализация обязательна'
     }
 
     if (!formData.password) {
@@ -77,7 +78,7 @@ export default function CreateChefForm() {
       formDataToSend.append('name', formData.name)
       formDataToSend.append('email', formData.email)
       formDataToSend.append('phone', formData.phone || '')
-      formDataToSend.append('specialization', formData.specialization)
+      formDataToSend.append('specialty', formData.specialty) // изменено
       formDataToSend.append('experience', formData.experience)
       formDataToSend.append('status', formData.status)
       formDataToSend.append('description', formData.description || '')
@@ -124,10 +125,6 @@ export default function CreateChefForm() {
     }))
   }
 
-  const handleCancel = () => {
-    router.back()
-  }
-
   const getInputClasses = (fieldName) => {
     return `
       w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 transition-all duration-300
@@ -146,14 +143,25 @@ export default function CreateChefForm() {
       className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 max-w-4xl mx-auto"
     >
       {/* Заголовок формы */}
-      <div className="text-center mb-8">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <button
+            onClick={onBack}
+            className="flex items-center text-gray-600 hover:text-gray-900 transition-colors duration-200 mb-4"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Назад к выбору
+          </button>
+          <h1 className="text-3xl font-bold text-gray-900">Создать нового повара</h1>
+          <p className="text-gray-600 mt-2">Создайте полностью нового повара с нуля</p>
+        </div>
         <FloatingElement speed="slow">
-          <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <span className="text-2xl text-white">👨‍🍳</span>
+          <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
+            <span className="text-2xl text-white">✨</span>
           </div>
         </FloatingElement>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Добавить нового повара</h1>
-        <p className="text-gray-600">Заполните информацию о новом поваре для добавления в систему</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
@@ -226,25 +234,25 @@ export default function CreateChefForm() {
                 </div>
 
                 <div>
-                  <label htmlFor="specialization" className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                  <label htmlFor="specialty" className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
                     <span className="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
                     Специализация *
                   </label>
                   <input
                     type="text"
-                    id="specialization"
-                    name="specialization"
-                    value={formData.specialization}
+                    id="specialty"
+                    name="specialty"
+                    value={formData.specialty}
                     onChange={handleChange}
                     required
                     disabled={isLoading}
-                    className={getInputClasses('specialization')}
+                    className={getInputClasses('specialty')}
                     placeholder="Например: Итальянская кухня, Суши-мастер"
                   />
-                  {errors.specialization && (
+                  {errors.specialty && (
                     <p className="mt-2 text-sm text-red-600 flex items-center">
                       <span className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></span>
-                      {errors.specialization}
+                      {errors.specialty}
                     </p>
                   )}
                 </div>
@@ -459,16 +467,13 @@ export default function CreateChefForm() {
           <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4 pt-6 border-t border-gray-200">
             <AnimatedButton
               type="button"
-              onClick={handleCancel}
+              onClick={onBack}
               disabled={isLoading}
               variant="secondary"
               size="lg"
               className="w-full sm:w-auto"
             >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              Отмена
+              Назад
             </AnimatedButton>
             
             <AnimatedButton
@@ -477,7 +482,7 @@ export default function CreateChefForm() {
               variant="primary"
               size="lg"
               loading={isLoading}
-              className="w-full sm:w-auto bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
+              className="w-full sm:w-auto bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
             >
               {isLoading ? (
                 <>

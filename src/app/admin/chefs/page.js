@@ -1,7 +1,6 @@
 // app/admin/chefs/page.jsx
 import { getChefs, getChefStats } from "../../actions/admin/chef.actions"
 import ChefsTable from "./components/chefs-table"
-import ChefActions from "./create/components/chef-actions"
 import SearchFilters from "./components/search-filters"
 import StatsOverview from "./components/stats-overview"
 import CreateChefButton from "./components/create-chef-button"
@@ -13,7 +12,7 @@ export default async function AdminChefsPage({ searchParams }) {
     status = '',
     specialization = '',
     sort = 'name'
-  } = searchParams
+  } = searchParams || {}
 
   console.log('Search params:', { search, status, specialization, sort, page })
 
@@ -66,7 +65,7 @@ export default async function AdminChefsPage({ searchParams }) {
       <StatsOverview stats={adminStats} />
 
       {/* Фильтры */}
-      < SearchFilters
+      <SearchFilters
         searchParams={searchParams}
         totalResults={pagination?.totalItems || 0}
       />
@@ -86,8 +85,9 @@ export default async function AdminChefsPage({ searchParams }) {
       {/* Таблица поваров */}
       <ChefsTable 
         chefs={chefs}
-        currentSort={sort}
+        currentSort={sort} 
         pagination={pagination}
+        searchParams={searchParams}
       />
 
       {/* Информация о результате */}

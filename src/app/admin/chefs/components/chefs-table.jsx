@@ -9,9 +9,9 @@ import {
   verifyChef 
 } from "../../../actions/admin/chef.actions"
 
-export default function ChefsTable({ chefs, currentSort, pagination }) {
+export default function ChefsTable({ chefs, currentSort, pagination, searchParams }) {
   const router = useRouter()
-  const searchParams = useSearchParams()
+  const params = useSearchParams()
   const [selectedChefs, setSelectedChefs] = useState(new Set())
   const [loadingStates, setLoadingStates] = useState({})
   const [error, setError] = useState('')
@@ -19,14 +19,21 @@ export default function ChefsTable({ chefs, currentSort, pagination }) {
 
   // Обновляем текущие фильтры при изменении searchParams
   useEffect(() => {
-    setCurrentFilters({
-      search: searchParams?.get('search') || '',
-      status: searchParams?.get('status') || '',
-      specialization: searchParams?.get('specialization') || '',
-      sort: searchParams?.get('sort') || 'name'
-    })
-  }, [searchParams])
+    const filters = {
+      search: params?.get('search') || '',
+      status: params?.get('status') || '',
+      specialization: params?.get('specialization') || '',
+      sort: params?.get('sort') || 'name'
+    }
+    setCurrentFilters(filters)
+  }, [params])
 
+  // Сбрасываем выделение при изменении фильтров
+  useEffect(() => {
+    setSelectedChefs(new Set())
+  }, [currentFilters])
+
+  // Остальные функции остаются без изменений...
   const handleSelectChef = (chefId) => {
     const newSelected = new Set(selectedChefs)
     if (newSelected.has(chefId)) {
@@ -62,7 +69,6 @@ export default function ChefsTable({ chefs, currentSort, pagination }) {
           result = await bulkUpdateChefs(chefIds, false)
           break
         case 'verify':
-          // Для массовой верификации нужно вызвать verify для каждого повара
           const results = await Promise.all(
             chefIds.map(id => verifyChef(id))
           )
@@ -79,7 +85,6 @@ export default function ChefsTable({ chefs, currentSort, pagination }) {
       
       if (result.success) {
         setSelectedChefs(new Set())
-        // Обновляем страницу для отображения изменений
         router.refresh()
       } else {
         setError(result.error || 'Ошибка выполнения операции')
@@ -89,6 +94,7 @@ export default function ChefsTable({ chefs, currentSort, pagination }) {
     }
   }
 
+  // Остальные функции без изменений...
   const handleStatusToggle = async (chefId, currentStatus) => {
     try {
       setLoadingStates(prev => ({ ...prev, [chefId]: true }))
@@ -97,7 +103,6 @@ export default function ChefsTable({ chefs, currentSort, pagination }) {
       const result = await updateChefStatus(chefId, !currentStatus)
       
       if (result.success) {
-        // Обновляем страницу для отображения изменений
         router.refresh()
       } else {
         setError(result.error || 'Ошибка изменения статуса')
@@ -478,7 +483,7 @@ export default function ChefsTable({ chefs, currentSort, pagination }) {
           <div className="flex space-x-2">
             <button
               onClick={() => {
-                const params = new URLSearchParams(searchParams?.toString() || '')
+                const params = new URLSearchParams(params?.toString() || '')
                 params.set('page', (pagination.currentPage - 1).toString())
                 router.push(`/admin/chefs?${params.toString()}`)
               }}
@@ -492,7 +497,7 @@ export default function ChefsTable({ chefs, currentSort, pagination }) {
             </span>
             <button
               onClick={() => {
-                const params = new URLSearchParams(searchParams?.toString() || '')
+                const params = new URLSearchParams(params?.toString() || '')
                 params.set('page', (pagination.currentPage + 1).toString())
                 router.push(`/admin/chefs?${params.toString()}`)
               }}

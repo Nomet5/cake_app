@@ -9,6 +9,13 @@ import {
   createSystemNotification 
 } from './notification.actions'
 
+interface ActionState {
+  success: boolean;
+  error?: string;
+  message?: string;
+  userId?: number;
+}
+
 const prisma = new PrismaClient()
 
 // READ (List) - возвращает массив пользователей
@@ -46,39 +53,68 @@ export async function getUsers() {
 }
 
 // CREATE - исправленная версия
-export async function createUser(formData: FormData) {
+export async function createUser(prevState: ActionState, formData: FormData): Promise<ActionState> {
   try {
-    const firstName = formData.get("firstName") as string
-    const email = formData.get("email") as string
-    const password = formData.get("password") as string
-    const phone = formData.get("phone") as string
+    const firstName = formData.get("firstName") as string;
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+    const phone = formData.get("phone") as string;
 
-    console.log('Creating user with:', { firstName, email, phone })
+    console.log('🔧 Creating user with:', { 
+      firstName: firstName?.substring(0, 10) + '...', 
+      email: email?.substring(0, 10) + '...',
+      phone: phone || 'не указан' 
+    });
 
     // Валидация данных
     if (!firstName?.trim()) {
-      return { success: false, error: 'Имя обязательно для заполнения' }
+      const error = 'Имя обязательно для заполнения';
+      console.error('❌ Validation error:', error);
+      return { 
+        success: false, 
+        error 
+      };
     }
 
     if (!email?.trim()) {
-      return { success: false, error: 'Email обязателен для заполнения' }
+      const error = 'Email обязателен для заполнения';
+      console.error('❌ Validation error:', error);
+      return { 
+        success: false, 
+        error 
+      };
     }
 
     if (!password?.trim()) {
-      return { success: false, error: 'Пароль обязателен для заполнения' }
+      const error = 'Пароль обязателен для заполнения';
+      console.error('❌ Validation error:', error);
+      return { 
+        success: false, 
+        error 
+      };
     }
 
     if (password.length < 6) {
-      return { success: false, error: 'Пароль должен содержать минимум 6 символов' }
+      const error = 'Пароль должен содержать минимум 6 символов';
+      console.error('❌ Validation error:', error);
+      return { 
+        success: false, 
+        error 
+      };
     }
 
     // Проверка существующего пользователя
     const existingUser = await prisma.user.findUnique({
       where: { email: email.trim().toLowerCase() }
-    })
+    });
 
     if (existingUser) {
-      return { success: false, error: 'Пользователь с таким email уже существует' }
+      const error = 'Пользователь с таким email уже существует';
+      console.error('❌ User exists error:', error, { email: email.trim().toLowerCase() });
+      return { 
+        success: false, 
+        error 
+      };
     }
 
     // Создаем пользователя
@@ -89,28 +125,49 @@ export async function createUser(formData: FormData) {
         passwordHash: await hashPassword(password),
         phone: phone?.trim() || null
       }
-    })
+    });
 
     // Создаем уведомление о новом пользователе
-    await createNewUserNotification(user)
+    await createNewUserNotification(user);
 
-    revalidatePath('/admin/users')
+    revalidatePath('/admin/users');
     
-    // Возвращаем успешный результат вместо redirect
+    console.log('✅ User created successfully:', { 
+      userId: user.id,
+      email: user.email 
+    });
+    
+    // Возвращаем успешный результат
     return { 
       success: true, 
       message: 'Пользователь успешно создан',
       userId: user.id 
-    }
+    };
     
-  } catch (error) {
-    console.error('Error creating user:', error)
+  } catch (error: unknown) {
+    // Правильно обрабатываем ошибку
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : 'Неизвестная ошибка при создании пользователя';
+    
+    console.error('❌ Database error creating user:', {
+      message: errorMessage,
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Создаем системное уведомление об ошибке
     await createSystemNotification(
       'Ошибка создания пользователя',
-      `Произошла ошибка при создании пользователя: ${error}`,
+      `Произошла ошибка при создании пользователя: ${errorMessage}`,
       'HIGH'
-    )
-    return { success: false, error: 'Ошибка при создании пользователя' }
+    );
+    
+    return { 
+      success: false, 
+      error: 'Внутренняя ошибка сервера. Пожалуйста, попробуйте позже.',
+      message: errorMessage
+    };
   }
 }
 

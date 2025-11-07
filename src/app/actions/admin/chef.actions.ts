@@ -4,132 +4,128 @@
 import { PrismaClient, NotificationType, NotificationPriority } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import { createNotification } from './notification.actions'
+import { createContextNotification,
+  createSystemNotification } from './notification.actions'
 
 const prisma = new PrismaClient()
 
 // CREATE - Создание повара с уведомлением (создает пользователя и повара)
 export async function createChef(formData: FormData) {
   try {
-    // Извлекаем данные из FormData
-    const name = formData.get("name") as string
-    const email = formData.get("email") as string
-    const phone = formData.get("phone") as string
-    const specialization = formData.get("specialization") as string
-    const experience = formData.get("experience") as string
-    const status = formData.get("status") as string
-    const description = formData.get("description") as string
-    const address = formData.get("address") as string
-    const avatar = formData.get("avatar") as string
-    const password = formData.get("password") as string
+    const name = formData.get('name') as string;
+    const email = formData.get('email') as string;
+    const phone = formData.get('phone') as string;
+    const specialty = formData.get('specialty') as string;
+    const experience = formData.get('experience') as string;
+    const status = formData.get('status') as string;
+    const description = formData.get('description') as string;
+    const address = formData.get('address') as string;
+    const avatar = formData.get('avatar') as string;
+    const password = formData.get('password') as string;
+    const confirmPassword = formData.get('confirmPassword') as string;
 
-    console.log('Creating chef with data:', {
-      name,
-      email,
-      phone,
-      specialization,
-      experience,
-      status,
-      description,
-      address,
-      avatar
-    })
-
-    // Валидация данных
-    if (!name || !email || !password) {
-      return { error: 'Имя, email и пароль обязательны' }
+    // Валидация
+    if (!name?.trim()) {
+      return { success: false, error: 'Имя обязательно' };
     }
 
-    // Проверяем не существует ли уже пользователь с таким email
+    if (!email?.trim()) {
+      return { success: false, error: 'Email обязателен' };
+    }
+
+    if (!specialty?.trim()) {
+      return { success: false, error: 'Специализация обязательна' };
+    }
+
+    if (!password?.trim()) {
+      return { success: false, error: 'Пароль обязателен' };
+    }
+
+    if (password.length < 6) {
+      return { success: false, error: 'Пароль должен содержать минимум 6 символов' };
+    }
+
+    if (password !== confirmPassword) {
+      return { success: false, error: 'Пароли не совпадают' };
+    }
+
+    // Проверяем существующего пользователя
     const existingUser = await prisma.user.findUnique({
-      where: { email }
-    })
+      where: { email: email.trim().toLowerCase() }
+    });
 
     if (existingUser) {
-      return { error: 'Пользователь с таким email уже существует' }
+      return { success: false, error: 'Пользователь с таким email уже существует' };
     }
-
-    // Хешируем пароль
-    const passwordHash = await hashPassword(password)
-
-    // Разбиваем имя на firstName и lastName (берем только первое слово как firstName)
-    const firstName = name.split(' ')[0] || name
 
     // Создаем пользователя
     const user = await prisma.user.create({
       data: {
-        firstName,
-        email,
-        phone: phone || null,
-        passwordHash,
-        // role не указан в модели, поэтому не передаем
-        // isActive не указан в модели, поэтому не передаем  
-        // avatar не указан в модели, поэтому не передаем
+        firstName: name.trim(),
+        email: email.trim().toLowerCase(),
+        passwordHash: await hashPassword(password),
+        phone: phone?.trim() || null,
+        role: 'CHEF', // Устанавливаем роль повара
       }
-    })
+    });
 
-    console.log('User created successfully:', user.id)
-
-    // Преобразуем опыт работы в yearsOfExperience
-    let yearsOfExperience: number | null = null
-    if (experience) {
-      const experienceMap: { [key: string]: number } = {
-        'Менее 1 года': 1,
-        '1-3 года': 2,
-        '3-5 лет': 4,
-        '5-10 лет': 7,
-        'Более 10 лет': 12
-      }
-      yearsOfExperience = experienceMap[experience] || null
-    }
+    // Преобразуем опыт работы в число
+    const yearsOfExperience = getYearsOfExperience(experience);
 
     // Создаем повара
-    const chefData = {
-      businessName: name, // Используем полное имя как название бизнеса
-      description: description || null,
-      specialty: specialization || null,
-      yearsOfExperience,
-      userId: user.id,
-      isActive: status === 'active',
-      isVerified: status === 'active'
-    }
-
     const chef = await prisma.chef.create({
-      data: chefData,
+      data: {
+        userId: user.id,
+        businessName: `${name.trim()}'s Kitchen`,
+        description: description || `Профессиональный повар ${name.trim()}, специализирующийся на ${specialty}`,
+        specialty: specialty,
+        yearsOfExperience: yearsOfExperience,
+        isActive: status === 'active',
+        isVerified: status === 'active',
+        // address: address || null, // если есть в схеме
+      },
       include: {
         user: {
           select: {
+            id: true,
             firstName: true,
             email: true,
             phone: true
           }
         }
       }
-    })
+    });
 
-    console.log('Chef created successfully:', chef)
+    // Создаем уведомление о новом поваре
+    await createChefNotification(chef, 'CREATED');
 
-    // СОЗДАЕМ УВЕДОМЛЕНИЕ о новом поваре
-    await createNotification({
-      type: NotificationType.USER,
-      priority: NotificationPriority.HIGH,
-      title: 'Новый повар зарегистрирован',
-      message: `Создан новый профиль повара "${name}"`,
-      data: {
-        chefId: chef.id,
-        businessName: chef.businessName,
-        userId: user.id,
-        userName: user.firstName,
-        action: 'CHEF_CREATED'
-      },
-      actionUrl: `/admin/chefs/${chef.id}`
-    })
-
-    revalidatePath('/admin/chefs')
-    revalidatePath('/chefs')
-    return { success: true, chef }
+    revalidatePath('/admin/chefs');
+    
+    return { 
+      success: true, 
+      chef: {
+        id: chef.id,
+        name: chef.user.firstName,
+        email: chef.user.email,
+        specialty: chef.specialty,
+        status: chef.isActive ? 'active' : 'inactive'
+      }
+    };
+    
   } catch (error) {
-    console.error('Error creating chef:', error)
-    return { error: 'Ошибка при создании повара: ' + (error as Error).message }
+    console.error('Error creating chef:', error);
+    
+    // Создаем системное уведомление об ошибке
+    await createSystemNotification(
+      'Ошибка создания повара',
+      `Произошла ошибка при создании повара: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`,
+      'HIGH'
+    );
+    
+    return { 
+      success: false, 
+      error: 'Ошибка при создании повара' 
+    };
   }
 }
 
@@ -1024,3 +1020,148 @@ export async function searchChefs(query: string, includeInactive: boolean = fals
     return [];
   }
 }
+
+export async function createChefFromUser(formData: FormData) {
+  try {
+    const userId = formData.get('userId') as string;
+    const specialty = formData.get('specialty') as string;
+    const experience = formData.get('experience') as string;
+    const status = formData.get('status') as string;
+    const description = formData.get('description') as string;
+    const address = formData.get('address') as string;
+    const avatar = formData.get('avatar') as string;
+
+    // Проверяем существование пользователя
+    const user = await prisma.user.findUnique({
+      where: { id: parseInt(userId) },
+      include: {
+        chefProfile: true
+      }
+    });
+
+    if (!user) {
+      return { success: false, error: 'Пользователь не найден' };
+    }
+
+    // Проверяем, не является ли пользователь уже поваром
+    if (user.chefProfile) {
+      return { success: false, error: 'Этот пользователь уже является поваром' };
+    }
+
+    // Преобразуем опыт работы в число
+    const yearsOfExperience = getYearsOfExperience(experience);
+
+    // Создаем повара с правильными полями из вашей схемы
+    const chef = await prisma.chef.create({
+      data: {
+        userId: parseInt(userId),
+        businessName: `${user.firstName}'s Kitchen`,
+        description: description || `Профессиональный повар ${user.firstName}, специализирующийся на ${specialty}`,
+        specialty: specialty,
+        yearsOfExperience: yearsOfExperience,
+        isActive: status === 'active',
+        isVerified: status === 'active',
+        // address: address || null,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            email: true,
+            phone: true
+          }
+        }
+      }
+    });
+
+    // Обновляем роль пользователя
+    await prisma.user.update({
+      where: { id: parseInt(userId) },
+      data: { role: 'CHEF' }
+    });
+
+    // Создаем уведомление о преобразовании пользователя в повара
+    await createChefNotification(chef, 'FROM_USER');
+
+    revalidatePath('/admin/chefs');
+    
+    return { 
+      success: true, 
+      chef: {
+        id: chef.id,
+        name: chef.user.firstName,
+        email: chef.user.email,
+        specialty: chef.specialty,
+        status: chef.isActive ? 'active' : 'inactive'
+      }
+    };
+    
+  } catch (error) {
+    console.error('Error creating chef from user:', error);
+    
+    // Создаем системное уведомление об ошибке
+    await createSystemNotification(
+      'Ошибка создания повара из пользователя',
+      `Произошла ошибка при создании повара из пользователя: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`,
+      'HIGH'
+    );
+    
+    return { 
+      success: false, 
+      error: 'Ошибка при создании повара из пользователя' 
+    };
+  }
+}
+
+// Вспомогательная функция для преобразования опыта работы
+function getYearsOfExperience(experience: string | null): number {
+  if (!experience) return 0;
+  
+  const experienceMap: { [key: string]: number } = {
+    'Менее 1 года': 1,
+    '1-3 года': 2,
+    '3-5 лет': 4,
+    '5-10 лет': 7,
+    'Более 10 лет': 10
+  };
+  
+  return experienceMap[experience] || 0;
+}
+
+// Функция для создания уведомлений о поварах
+async function createChefNotification(chef: any, type: 'CREATED' | 'FROM_USER' | 'APPLICATION') {
+  try {
+    const messages = {
+      CREATED: `Создан новый повар: ${chef.user.firstName} (${chef.businessName})`,
+      FROM_USER: `Пользователь ${chef.user.firstName} преобразован в повара: ${chef.businessName}`,
+      APPLICATION: `Новая заявка на роль повара от ${chef.user.firstName}: ${chef.businessName}`
+    };
+
+    const subContexts = {
+      CREATED: 'NEW',
+      FROM_USER: 'CONVERTED', 
+      APPLICATION: 'CHEF_APPLICATION'
+    };
+
+    await createContextNotification(
+      'USER',
+      subContexts[type] as any,
+      messages[type],
+      chef.id,
+      {
+        chefId: chef.id,
+        businessName: chef.businessName,
+        userName: chef.user.firstName,
+        userEmail: chef.user.email,
+        specialty: chef.specialty,
+        actionType: type
+      }
+    );
+  } catch (error) {
+    console.error('Error creating chef notification:', error);
+  }
+}
+
+
+

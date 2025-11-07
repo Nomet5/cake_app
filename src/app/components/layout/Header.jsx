@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Button from '../common/Button'
 import SearchBar from '../catalog/SearchBar'
@@ -10,9 +10,35 @@ import { useFavorites } from '../context/FavoritesContext'
 const Header = () => {
     const [isSearchOpen, setIsSearchOpen] = useState(false)
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+    const [isLoggedIn, setIsLoggedIn] = useState(false)
+    const [userName, setUserName] = useState('')
     const { getCartItemsCount } = useCart()
     const { favoritesCount } = useFavorites()
     const cartItemsCount = getCartItemsCount()
+
+    // Проверяем авторизацию при загрузке
+    useEffect(() => {
+        checkAuthStatus()
+    }, [])
+
+    const checkAuthStatus = () => {
+        // Временная проверка - потом заменим на реальную
+        const token = localStorage.getItem('auth_token')
+        const user = localStorage.getItem('user')
+
+        if (token && user) {
+            setIsLoggedIn(true)
+            setUserName(JSON.parse(user).firstName)
+        }
+    }
+
+    const handleLogout = () => {
+        localStorage.removeItem('auth_token')
+        localStorage.removeItem('user')
+        setIsLoggedIn(false)
+        setUserName('')
+        window.location.href = '/'
+    }
 
     const closeMobileMenu = () => {
         setIsMobileMenuOpen(false)
@@ -80,9 +106,38 @@ const Header = () => {
                                 )}
                             </Button>
                         </Link>
-                        <Link href="/profile" className="p-2 text-bakery-1050 hover:text-bakery-500 transition-colors">
-                            👤
-                        </Link>
+
+                        {/* Кнопки входа/регистрации или профиль */}
+                        {isLoggedIn ? (
+                            <div className="flex items-center gap-3">
+                                <Link href="/profile" className="flex items-center gap-2 text-bakery-1100 hover:text-bakery-500 transition-colors font-body">
+                                    <span className="w-8 h-8 bg-bakery-500 text-white rounded-full flex items-center justify-center text-sm">
+                                        {userName ? userName.charAt(0).toUpperCase() : '👤'}
+                                    </span>
+                                    <span className="hidden sm:block">{userName}</span>
+                                </Link>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleLogout}
+                                >
+                                    Выйти
+                                </Button>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2">
+                                <Link href="/login">
+                                    <Button variant="outline" size="sm">
+                                        Войти
+                                    </Button>
+                                </Link>
+                                <Link href="/register">
+                                    <Button size="sm">
+                                        Регистрация
+                                    </Button>
+                                </Link>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -131,6 +186,42 @@ const Header = () => {
                                         </span>
                                     )}
                                 </Link>
+
+                                {/* Кнопки входа/регистрации для мобильных */}
+                                {isLoggedIn ? (
+                                    <>
+                                        <Link
+                                            href="/profile"
+                                            className="text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body py-3 px-4 rounded-lg hover:bg-bakery-50"
+                                            onClick={closeMobileMenu}
+                                        >
+                                            Профиль ({userName})
+                                        </Link>
+                                        <button
+                                            onClick={handleLogout}
+                                            className="text-left text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body py-3 px-4 rounded-lg hover:bg-bakery-50"
+                                        >
+                                            Выйти
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Link
+                                            href="/login"
+                                            className="text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body py-3 px-4 rounded-lg hover:bg-bakery-50"
+                                            onClick={closeMobileMenu}
+                                        >
+                                            Войти
+                                        </Link>
+                                        <Link
+                                            href="/register"
+                                            className="text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body py-3 px-4 rounded-lg hover:bg-bakery-50"
+                                            onClick={closeMobileMenu}
+                                        >
+                                            Регистрация
+                                        </Link>
+                                    </>
+                                )}
                             </nav>
                         </div>
                     </div>

@@ -4,51 +4,42 @@ import Button from '../components/common/Button'
 import Rating from '../components/common/Rating'
 import Link from 'next/link'
 
-const BakersPage = () => {
-    const bakers = [
-        {
-            id: 1,
-            name: 'Пекарня "У Марии"',
-            rating: 4.8,
-            reviews: 127,
-            specialties: ['Торты', 'Пироги', 'Десерты'],
-            deliveryTime: '25-40 мин',
-            minPrice: 500,
-            distance: '2 км от вас',
-            description: 'Семейная пекарня с 15-летним опытом. Готовим с любовью из натуральных продуктов.',
-            image: '👩‍🍳'
-        },
-        {
-            id: 2,
-            name: 'Кондитерская "Сладости"',
-            rating: 4.9,
-            reviews: 84,
-            specialties: ['Десерты', 'Торты', 'Пирожные'],
-            deliveryTime: '15-30 мин',
-            minPrice: 800,
-            distance: '3 км от вас',
-            description: 'Авторские десерты и торты на заказ. Используем только premium ингредиенты.',
-            image: '🍰'
-        },
-        {
-            id: 3,
-            name: 'Домашняя кухня "Вкусно"',
-            rating: 4.7,
-            reviews: 56,
-            specialties: ['Хлеб', 'Выпечка', 'Завтраки'],
-            deliveryTime: '20-35 мин',
-            minPrice: 300,
-            distance: '1.5 км от вас',
-            description: 'Домашняя выпечка как у бабушки. Натурально, вкусно и по-домашнему.',
-            image: '🏠'
+// Функция для получения поваров из API
+async function getBakers() {
+    try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/chefs`, {
+            next: { revalidate: 60 } // Кешируем на 60 секунд
+        })
+
+        if (!response.ok) {
+            throw new Error('Ошибка загрузки поваров')
         }
-    ]
+
+        const data = await response.json()
+
+        if (data.success) {
+            return data.data
+        } else {
+            console.error('API Error:', data.error)
+            return []
+        }
+    } catch (error) {
+        console.error('Error fetching bakers:', error)
+        // Возвращаем пустой массив в случае ошибки
+        return []
+    }
+}
+
+const BakersPage = async () => {
+    // Получаем поваров из API
+    const bakers = await getBakers()
 
     return (
-        <div className="min-h-screen bg-bakery-50">
+        <div className="min-h-screen bg-bakery-50 flex flex-col">
             <Header />
 
-            <div className="container mx-auto px-4 py-8">
+            {/* Основной контент - растягивается чтобы футер был внизу */}
+            <main className="flex-1 container mx-auto px-4 py-8">
                 {/* Хлебные крошки */}
                 <div className="flex items-center gap-2 text-bakery-1050 text-sm mb-6 font-body">
                     <Link href="/" className="hover:text-bakery-500 transition-colors">Главная</Link>
@@ -67,6 +58,19 @@ const BakersPage = () => {
                         </p>
                     </div>
                 </div>
+
+                {/* Сообщение если поваров нет */}
+                {bakers.length === 0 && (
+                    <div className="text-center py-12">
+                        <div className="text-6xl mb-4">👨‍🍳</div>
+                        <h3 className="text-xl font-semibold text-bakery-1100 mb-2">
+                            Поваров пока нет
+                        </h3>
+                        <p className="text-bakery-1050">
+                            Зайдите позже или создайте поваров в панели администратора
+                        </p>
+                    </div>
+                )}
 
                 {/* Сетка пекарей */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -135,8 +139,9 @@ const BakersPage = () => {
                         </div>
                     ))}
                 </div>
-            </div>
+            </main>
 
+            {/* Футер - теперь всегда внизу */}
             <Footer />
         </div>
     )

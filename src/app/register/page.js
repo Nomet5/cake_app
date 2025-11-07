@@ -4,9 +4,9 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Header from '../components/layout/Header'
-import Footer from '../components/layout/Footer'
 import FadeIn from '../components/common/FadeIn'
 import Button from '../components/common/Button'
+import { registerUser } from '../actions/client/auth.actions.ts'
 
 export default function RegisterPage() {
     const [formData, setFormData] = useState({
@@ -16,28 +16,63 @@ export default function RegisterPage() {
         confirmPassword: ''
     })
     const [isLoading, setIsLoading] = useState(false)
+    const [error, setError] = useState('')
+    const [success, setSuccess] = useState('')
 
     const handleChange = (e) => {
         setFormData(prev => ({
             ...prev,
             [e.target.name]: e.target.value
         }))
+        // Очищаем ошибки при изменении формы
+        setError('')
+        setSuccess('')
     }
 
     const handleSubmit = async (e) => {
         e.preventDefault()
+        setError('')
+        setSuccess('')
 
         if (formData.password !== formData.confirmPassword) {
-            alert('Пароли не совпадают')
+            setError('Пароли не совпадают')
+            return
+        }
+
+        if (formData.password.length < 6) {
+            setError('Пароль должен содержать не менее 6 символов')
             return
         }
 
         setIsLoading(true)
 
-        setTimeout(() => {
+        try {
+            const result = await registerUser({
+                name: formData.name,
+                email: formData.email,
+                password: formData.password
+            })
+
+            if (result.success) {
+                setSuccess('Регистрация прошла успешно!')
+
+                // Сохраняем пользователя в localStorage
+                localStorage.setItem('auth_token', 'user_' + result.user.id)
+                localStorage.setItem('user', JSON.stringify(result.user))
+
+                // Перенаправляем на страницу профиля через 1 секунду
+                setTimeout(() => {
+                    window.location.href = '/profile'
+                }, 1000)
+            } else {
+                setError(result.error || 'Ошибка при регистрации')
+            }
+        } catch (error) {
+            setError('Произошла ошибка. Попробуйте еще раз.')
+            console.error('Registration error:', error)
+        } finally {
             setIsLoading(false)
-            console.log('Registration attempt:', formData)
-        }, 1500)
+        }
     }
 
     return (
@@ -72,6 +107,18 @@ export default function RegisterPage() {
                                         </p>
                                     </div>
 
+                                    {/* Сообщения об ошибках/успехе */}
+                                    {error && (
+                                        <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-xl text-sm font-body">
+                                            {error}
+                                        </div>
+                                    )}
+                                    {success && (
+                                        <div className="mb-4 p-3 bg-green-100 border border-green-300 text-green-700 rounded-xl text-sm font-body">
+                                            {success}
+                                        </div>
+                                    )}
+
                                     {/* Форма */}
                                     <form onSubmit={handleSubmit} className="space-y-6">
                                         <div className="space-y-4">
@@ -90,7 +137,6 @@ export default function RegisterPage() {
                                                         className="w-full px-4 py-3 bg-white/50 border-2 border-bakery-200/50 rounded-xl focus:ring-2 focus:ring-bakery-400 focus:border-bakery-400/50 transition-all duration-300 font-body placeholder-bakery-400/50 backdrop-blur-sm"
                                                         placeholder="Ваше имя"
                                                     />
-                                                  
                                                 </div>
                                             </div>
 
@@ -109,7 +155,6 @@ export default function RegisterPage() {
                                                         className="w-full px-4 py-3 bg-white/50 border-2 border-bakery-200/50 rounded-xl focus:ring-2 focus:ring-bakery-400 focus:border-bakery-400/50 transition-all duration-300 font-body placeholder-bakery-400/50 backdrop-blur-sm"
                                                         placeholder="your@email.com"
                                                     />
-                                                    
                                                 </div>
                                             </div>
 
@@ -127,8 +172,8 @@ export default function RegisterPage() {
                                                         onChange={handleChange}
                                                         className="w-full px-4 py-3 bg-white/50 border-2 border-bakery-200/50 rounded-xl focus:ring-2 focus:ring-bakery-400 focus:border-bakery-400/50 transition-all duration-300 font-body placeholder-bakery-400/50 backdrop-blur-sm"
                                                         placeholder="Не менее 6 символов"
+                                                        minLength="6"
                                                     />
-                                                    
                                                 </div>
                                             </div>
 
@@ -147,7 +192,6 @@ export default function RegisterPage() {
                                                         className="w-full px-4 py-3 bg-white/50 border-2 border-bakery-200/50 rounded-xl focus:ring-2 focus:ring-bakery-400 focus:border-bakery-400/50 transition-all duration-300 font-body placeholder-bakery-400/50 backdrop-blur-sm"
                                                         placeholder="Повторите пароль"
                                                     />
-                                                    
                                                 </div>
                                             </div>
                                         </div>
@@ -198,10 +242,7 @@ export default function RegisterPage() {
                         </div>
                     </div>
                 </FadeIn>
-                
             </div>
-
-            <Footer />
         </div>
     )
 }

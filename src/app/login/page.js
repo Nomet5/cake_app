@@ -4,9 +4,9 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Header from '../components/layout/Header'
-import Footer from '../components/layout/Footer'
 import FadeIn from '../components/common/FadeIn'
 import Button from '../components/common/Button'
+import { loginUser } from '../actions/client/auth.actions.ts'
 
 export default function LoginPage() {
     const [formData, setFormData] = useState({
@@ -14,22 +14,51 @@ export default function LoginPage() {
         password: ''
     })
     const [isLoading, setIsLoading] = useState(false)
+    const [error, setError] = useState('')
+    const [success, setSuccess] = useState('')
 
     const handleChange = (e) => {
         setFormData(prev => ({
             ...prev,
             [e.target.name]: e.target.value
         }))
+        // Очищаем ошибки при изменении формы
+        setError('')
+        setSuccess('')
     }
 
     const handleSubmit = async (e) => {
         e.preventDefault()
+        setError('')
+        setSuccess('')
         setIsLoading(true)
 
-        setTimeout(() => {
+        try {
+            const result = await loginUser({
+                email: formData.email,
+                password: formData.password
+            })
+
+            if (result.success) {
+                setSuccess('Вход выполнен успешно!')
+
+                // Сохраняем пользователя в localStorage
+                localStorage.setItem('auth_token', 'user_' + result.user.id)
+                localStorage.setItem('user', JSON.stringify(result.user))
+
+                // Перенаправляем на главную страницу через 1 секунду
+                setTimeout(() => {
+                    window.location.href = '/'
+                }, 1000)
+            } else {
+                setError(result.error || 'Ошибка при входе')
+            }
+        } catch (error) {
+            setError('Произошла ошибка. Попробуйте еще раз.')
+            console.error('Login error:', error)
+        } finally {
             setIsLoading(false)
-            console.log('Login attempt:', formData)
-        }, 1500)
+        }
     }
 
     return (
@@ -74,6 +103,18 @@ export default function LoginPage() {
                                         Войдите в свой аккаунт
                                     </p>
                                 </div>
+
+                                {/* Сообщения об ошибках/успехе */}
+                                {error && (
+                                    <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-xl text-sm font-body">
+                                        {error}
+                                    </div>
+                                )}
+                                {success && (
+                                    <div className="mb-4 p-3 bg-green-100 border border-green-300 text-green-700 rounded-xl text-sm font-body">
+                                        {success}
+                                    </div>
+                                )}
 
                                 {/* Форма */}
                                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -199,7 +240,7 @@ export default function LoginPage() {
             {/* Декоративный нижний элемент */}
             <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-bakery-300/10 to-transparent pointer-events-none"></div>
 
-            
+
         </div>
     )
 }

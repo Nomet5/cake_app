@@ -22,7 +22,6 @@ const Header = () => {
     }, [])
 
     const checkAuthStatus = () => {
-        // Временная проверка - потом заменим на реальную
         const token = localStorage.getItem('auth_token')
         const user = localStorage.getItem('user')
 
@@ -30,14 +29,6 @@ const Header = () => {
             setIsLoggedIn(true)
             setUserName(JSON.parse(user).firstName)
         }
-    }
-
-    const handleLogout = () => {
-        localStorage.removeItem('auth_token')
-        localStorage.removeItem('user')
-        setIsLoggedIn(false)
-        setUserName('')
-        window.location.href = '/'
     }
 
     const closeMobileMenu = () => {
@@ -83,7 +74,7 @@ const Header = () => {
                     </nav>
 
                     {/* Поиск и действия */}
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-5">
                         <div className="hidden md:block">
                             <SearchBar />
                         </div>
@@ -107,36 +98,20 @@ const Header = () => {
                             </Button>
                         </Link>
 
-                        {/* Кнопки входа/регистрации или профиль */}
+                        {/* Кнопка входа или профиль */}
                         {isLoggedIn ? (
-                            <div className="flex items-center gap-3">
-                                <Link href="/profile" className="flex items-center gap-2 text-bakery-1100 hover:text-bakery-500 transition-colors font-body">
-                                    <span className="w-8 h-8 bg-bakery-500 text-white rounded-full flex items-center justify-center text-sm">
-                                        {userName ? userName.charAt(0).toUpperCase() : '👤'}
-                                    </span>
-                                    <span className="hidden sm:block">{userName}</span>
-                                </Link>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleLogout}
-                                >
-                                    Выйти
-                                </Button>
-                            </div>
+                            <Link href="/profile" className="flex items-center gap-2 text-bakery-1100 hover:text-bakery-500 transition-colors font-body">
+                                <span className="w-8 h-8 bg-bakery-500 text-white rounded-full flex items-center justify-center text-sm">
+                                    {userName ? userName.charAt(0).toUpperCase() : '👤'}
+                                </span>
+                                <span className="hidden sm:block">{userName}</span>
+                            </Link>
                         ) : (
-                            <div className="flex items-center gap-2">
-                                <Link href="/login">
-                                    <Button variant="outline" size="sm">
-                                        Войти
-                                    </Button>
-                                </Link>
-                                <Link href="/register">
-                                    <Button size="sm">
-                                        Регистрация
-                                    </Button>
-                                </Link>
-                            </div>
+                            <Link href="/login">
+                                <Button size="sm">
+                                    Войти
+                                </Button>
+                            </Link>
                         )}
                     </div>
                 </div>
@@ -187,40 +162,23 @@ const Header = () => {
                                     )}
                                 </Link>
 
-                                {/* Кнопки входа/регистрации для мобильных */}
+                                {/* Кнопки для мобильных */}
                                 {isLoggedIn ? (
-                                    <>
-                                        <Link
-                                            href="/profile"
-                                            className="text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body py-3 px-4 rounded-lg hover:bg-bakery-50"
-                                            onClick={closeMobileMenu}
-                                        >
-                                            Профиль ({userName})
-                                        </Link>
-                                        <button
-                                            onClick={handleLogout}
-                                            className="text-left text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body py-3 px-4 rounded-lg hover:bg-bakery-50"
-                                        >
-                                            Выйти
-                                        </button>
-                                    </>
+                                    <Link
+                                        href="/profile"
+                                        className="text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body py-3 px-4 rounded-lg hover:bg-bakery-50"
+                                        onClick={closeMobileMenu}
+                                    >
+                                        Профиль ({userName})
+                                    </Link>
                                 ) : (
-                                    <>
-                                        <Link
-                                            href="/login"
-                                            className="text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body py-3 px-4 rounded-lg hover:bg-bakery-50"
-                                            onClick={closeMobileMenu}
-                                        >
-                                            Войти
-                                        </Link>
-                                        <Link
-                                            href="/register"
-                                            className="text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body py-3 px-4 rounded-lg hover:bg-bakery-50"
-                                            onClick={closeMobileMenu}
-                                        >
-                                            Регистрация
-                                        </Link>
-                                    </>
+                                    <Link
+                                        href="/login"
+                                        className="text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body py-3 px-4 rounded-lg hover:bg-bakery-50"
+                                        onClick={closeMobileMenu}
+                                    >
+                                        Войти
+                                    </Link>
                                 )}
                             </nav>
                         </div>

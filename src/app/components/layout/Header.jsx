@@ -57,13 +57,22 @@ const Header = () => {
 
                     {/* Навигация для десктопа */}
                     <nav className="hidden md:flex items-center gap-8">
-                        <Link href="/catalog" className="text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body">
+                        <Link
+                            href="/catalog"
+                            className="nav-link text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body relative"
+                        >
                             Каталог
                         </Link>
-                        <Link href="/bakers" className="text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body">
+                        <Link
+                            href="/bakers"
+                            className="nav-link text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body relative"
+                        >
                             Пекари
                         </Link>
-                        <Link href="/favorites" className="text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body relative">
+                        <Link
+                            href="/favorites"
+                            className="nav-link text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body relative"
+                        >
                             Избранное
                             {favoritesCount > 0 && (
                                 <span className="absolute -top-2 -right-3 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
@@ -100,11 +109,16 @@ const Header = () => {
 
                         {/* Кнопка входа или профиль */}
                         {isLoggedIn ? (
-                            <Link href="/profile" className="flex items-center gap-2 text-bakery-1100 hover:text-bakery-500 transition-colors font-body">
+                            <Link
+                                href="/profile"
+                                className="nav-link flex items-center gap-2 text-bakery-1100 hover:text-bakery-500 transition-colors font-body relative"
+                            >
                                 <span className="w-8 h-8 bg-bakery-500 text-white rounded-full flex items-center justify-center text-sm">
                                     {userName ? userName.charAt(0).toUpperCase() : '👤'}
                                 </span>
-                                <span className="hidden sm:block">{userName}</span>
+                                <span className="hidden sm:block nav-link relative">
+                                    {userName}
+                                </span>
                             </Link>
                         ) : (
                             <Link href="/login">
@@ -130,28 +144,28 @@ const Header = () => {
                             <nav className="flex flex-col gap-1">
                                 <Link
                                     href="/"
-                                    className="text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body py-3 px-4 rounded-lg hover:bg-bakery-50"
+                                    className="mobile-nav-link text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body py-3 px-4 rounded-lg hover:bg-bakery-50 relative"
                                     onClick={closeMobileMenu}
                                 >
                                     Главная
                                 </Link>
                                 <Link
                                     href="/catalog"
-                                    className="text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body py-3 px-4 rounded-lg hover:bg-bakery-50"
+                                    className="mobile-nav-link text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body py-3 px-4 rounded-lg hover:bg-bakery-50 relative"
                                     onClick={closeMobileMenu}
                                 >
                                     Каталог
                                 </Link>
                                 <Link
                                     href="/bakers"
-                                    className="text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body py-3 px-4 rounded-lg hover:bg-bakery-50"
+                                    className="mobile-nav-link text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body py-3 px-4 rounded-lg hover:bg-bakery-50 relative"
                                     onClick={closeMobileMenu}
                                 >
                                     Пекари
                                 </Link>
                                 <Link
                                     href="/favorites"
-                                    className="text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body py-3 px-4 rounded-lg hover:bg-bakery-50 flex items-center justify-between"
+                                    className="mobile-nav-link text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body py-3 px-4 rounded-lg hover:bg-bakery-50 flex items-center justify-between relative"
                                     onClick={closeMobileMenu}
                                 >
                                     <span>Избранное</span>
@@ -166,7 +180,7 @@ const Header = () => {
                                 {isLoggedIn ? (
                                     <Link
                                         href="/profile"
-                                        className="text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body py-3 px-4 rounded-lg hover:bg-bakery-50"
+                                        className="mobile-nav-link text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body py-3 px-4 rounded-lg hover:bg-bakery-50 relative"
                                         onClick={closeMobileMenu}
                                     >
                                         Профиль ({userName})
@@ -174,7 +188,7 @@ const Header = () => {
                                 ) : (
                                     <Link
                                         href="/login"
-                                        className="text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body py-3 px-4 rounded-lg hover:bg-bakery-50"
+                                        className="mobile-nav-link text-bakery-1100 hover:text-bakery-500 font-medium transition-colors font-body py-3 px-4 rounded-lg hover:bg-bakery-50 relative"
                                         onClick={closeMobileMenu}
                                     >
                                         Войти

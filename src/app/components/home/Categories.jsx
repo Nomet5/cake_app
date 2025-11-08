@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import FadeIn from '../common/FadeIn'
 import HoverScale from '../common/HoverScale'
 import Image from 'next/image'
+import { useRef } from 'react'
 
 const Categories = () => {
     const categories = [
@@ -49,6 +50,20 @@ const Categories = () => {
         },
     ]
 
+    const scrollContainerRef = useRef(null)
+
+    const scrollLeft = () => {
+        if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollBy({ left: -300, behavior: 'smooth' })
+        }
+    }
+
+    const scrollRight = () => {
+        if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollBy({ left: 300, behavior: 'smooth' })
+        }
+    }
+
     // Анимация для контейнера
     const container = {
         hidden: { opacity: 0 },
@@ -68,10 +83,10 @@ const Categories = () => {
 
     return (
         <FadeIn>
-            <section className="py-12 bg-white">
+            <section className="py-16 bg-bakery-100">
                 <div className="container mx-auto px-4">
                     <motion.h2
-                        className="text-2xl font-bold text-bakery-1150 mb-6 font-display"
+                        className="text-3xl font-bold text-bakery-1150 mb-8 font-display text-center"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6 }}
@@ -80,9 +95,30 @@ const Categories = () => {
                     </motion.h2>
 
                     <div className="relative">
-                        {/* Горизонтальный скролл с анимацией */}
+                        {/* Кнопки навигации для десктопа */}
+                        <div className="hidden lg:block">
+                            <button
+                                onClick={scrollLeft}
+                                className="absolute left-0 top-1/2 transform -translate-y-1/2 z-20 bg-white/80 hover:bg-white text-bakery-600 hover:text-bakery-700 w-10 h-10 rounded-full shadow-lg border border-bakery-200 flex items-center justify-center transition-all duration-200 hover:scale-110 backdrop-blur-sm"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+                            <button
+                                onClick={scrollRight}
+                                className="absolute right-0 top-1/2 transform -translate-y-1/2 z-20 bg-white/80 hover:bg-white text-bakery-600 hover:text-bakery-700 w-10 h-10 rounded-full shadow-lg border border-bakery-200 flex items-center justify-center transition-all duration-200 hover:scale-110 backdrop-blur-sm"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        {/* Горизонтальный скролл с кастомным скроллбаром */}
                         <motion.div
-                            className="flex gap-4 overflow-x-auto p-4 scrollbar-hide"
+                            ref={scrollContainerRef}
+                            className="flex gap-6 overflow-x-auto p-4 scroll-container"
                             variants={container}
                             initial="hidden"
                             animate="show"
@@ -94,14 +130,14 @@ const Categories = () => {
                                     className="flex-shrink-0"
                                 >
                                     <HoverScale scale={1.05}>
-                                        <button className="flex flex-col items-center justify-center p-4 bg-bakery-50 rounded-2xl border border-bakery-200 hover:border-bakery-400 transition-all duration-200 min-w-[120px] group relative overflow-hidden">
+                                        <button className="flex flex-col items-center justify-center p-6 bg-bakery-50 rounded-2xl border border-bakery-200 hover:border-bakery-400 transition-all duration-200 min-w-[160px] group relative overflow-hidden shadow-bakery-soft hover:shadow-bakery-medium">
                                             {/* Фотография категории */}
-                                            <div className="w-16 h-16 mb-2 rounded-full overflow-hidden border-2 border-bakery-200 group-hover:border-bakery-400 transition-colors">
+                                            <div className="w-24 h-24 mb-4 rounded-full overflow-hidden border-2 border-bakery-200 group-hover:border-bakery-400 transition-colors">
                                                 <Image
                                                     src={category.image}
                                                     alt={category.name}
-                                                    width={64}
-                                                    height={64}
+                                                    width={96}
+                                                    height={96}
                                                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                                                     onError={(e) => {
                                                         // Fallback если изображение не загрузилось
@@ -110,25 +146,22 @@ const Categories = () => {
                                                     }}
                                                 />
                                                 {/* Fallback иконка */}
-                                                <div className="w-full h-full bg-bakery-100 flex items-center justify-center text-bakery-600 text-lg hidden">
+                                                <div className="w-full h-full bg-bakery-100 flex items-center justify-center text-bakery-600 text-3xl hidden">
                                                     {getCategoryIcon(category.name)}
                                                 </div>
                                             </div>
 
-                                            <span className="text-sm font-medium text-bakery-1100 text-center font-body">
+                                            <span className="text-base font-semibold text-bakery-1100 text-center font-body">
                                                 {category.name}
                                             </span>
-                                            <span className="text-xs text-bakery-1050 mt-1">
-                                                {category.count}
+                                            <span className="text-sm text-bakery-1050 mt-2 font-medium">
+                                                {category.count} товаров
                                             </span>
                                         </button>
                                     </HoverScale>
                                 </motion.div>
                             ))}
                         </motion.div>
-
-                        {/* Градиент для индикации скролла */}
-                        <div className="absolute right-0 top-0 bottom-4 w-20 bg-gradient-to-l from-white to-transparent pointer-events-none" />
                     </div>
                 </div>
             </section>

@@ -25,7 +25,7 @@ const Hero = () => {
     }
 
     return (
-        <section className="relative bg-gradient-to-br from-bakery-50 via-bakery-100 to-bakery-150 py-20 overflow-hidden">
+        <section className="relative  py-20 overflow-hidden">
             {/* Декоративные элементы */}
             <div className="absolute top-10 left-10 w-20 h-20 bg-bakery-300 rounded-full opacity-20 animate-pulse"></div>
             <div className="absolute bottom-20 right-20 w-16 h-16 bg-bakery-400 rounded-full opacity-30 animate-bounce"></div>
@@ -38,7 +38,7 @@ const Hero = () => {
                         <h1 className="text-4xl md:text-6xl font-bold text-bakery-1150 mb-6 font-display leading-tight">
                             Домашняя еда с{' '}
                             <motion.span
-                                className="text-transparent bg-clip-text bg-gradient-to-r from-bakery-400 to-bakery-600"
+                                className="bg-clip-text  text-bakery-400 "
                                 animate={{
                                     backgroundPosition: ['0%', '100%', '0%']
                                 }}

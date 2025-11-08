@@ -76,7 +76,7 @@ export default function RegisterPage() {
     }
 
     return (
-        <div className="min-h-screen bg-bakery-700 flex flex-col relative overflow-hidden">
+        <div className="min-h-screen auth-background flex flex-col relative overflow-hidden">
             <Header />
 
             <div className="flex-1 flex items-center justify-center py-12 px-4">
@@ -96,8 +96,11 @@ export default function RegisterPage() {
                                 <div className="relative z-10">
                                     {/* Заголовок */}
                                     <div className="text-center mb-8">
-                                        <div className="w-16 h-16 bg-gradient-to-br from-bakery-400 to-bakery-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-bakery-soft">
-                                            <span className="text-2xl text-white">🎂</span>
+                                        <div className="w-20 h-20 bg-bakery-400  rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-bakery-soft">
+                                            <img
+                                                src="/images/auth/icon_profile.png"
+                                                alt="Регистрация"
+                                            />
                                         </div>
                                         <h1 className="text-3xl font-bold text-bakery-1150 font-display mb-2">
                                             Присоединяйтесь!
@@ -215,7 +218,7 @@ export default function RegisterPage() {
                                         <Button
                                             type="submit"
                                             size="lg"
-                                            className="w-full bg-gradient-to-r from-bakery-500 to-bakery-600 hover:from-bakery-600 hover:to-bakery-700 shadow-bakery-soft hover:shadow-bakery-medium transition-all duration-300 transform hover:scale-105"
+                                            className="w-full shadow-bakery-soft hover:shadow-bakery-medium transition-all duration-300 transform hover:scale-105"
                                             disabled={isLoading}
                                         >
                                             {isLoading ? (

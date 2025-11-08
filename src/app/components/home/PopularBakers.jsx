@@ -37,7 +37,7 @@ const PopularBakers = () => {
     ]
 
     return (
-        <section className="py-16 bg-bakery-100">
+        <section className="py-16">
             <div className="container mx-auto px-4">
                 <div className="flex items-center justify-between mb-8">
                     <h2 className="text-3xl font-bold text-bakery-1150 font-display">

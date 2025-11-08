@@ -3,19 +3,22 @@ module.exports = {
   content: ["./src/**/*.{html,js,ts,jsx,tsx}"],
   theme: {
     extend: {
+      screens: {
+        '2xl': '1440px', // Добавляем кастомный брейкпоинт
+      },
       colors: {
         // Обновленная палитра - темнее и насыщеннее
         bakery: {
-          50: '#FFF8F0',      // Более насыщенный кремовый
-          100: '#FEF0E0',     // Насыщенный теплый белый
+          50: '#f9f2e8',      // Более насыщенный кремовый
+          100: '#EAD7BB',     // Насыщенный теплый белый
           150: '#FAE8D5',     // Более темный мягкий крем
           200: '#F5DCC0',     // Насыщенный пудровый
           250: '#F0D0A8',     // Более насыщенный бежевый
 
           // Теплые акцентные цвета - темнее и насыщеннее
           300: '#FF8A5C',     // Более насыщенный персиковый
-          400: '#FF6B3A',     // Насыщенный абрикосовый
-          500: '#E85A2E',     // Более темная терракота
+          400: '#68362a',     // Насыщенный абрикосовый
+          500: '#42200C',     // Более темная терракота
 
           // Золотые тона - темнее и насыщеннее
           600: '#E0A45C',     // Насыщенное светлое золото
@@ -67,6 +70,19 @@ module.exports = {
         '5xl': ['3rem', { lineHeight: '1', letterSpacing: '-0.025em' }],          // 48px
         '6xl': ['3.75rem', { lineHeight: '1', letterSpacing: '-0.03em' }],        // 60px
         '7xl': ['4.5rem', { lineHeight: '1', letterSpacing: '-0.035em' }],        // 72px
+
+        // Увеличенные размеры для больших экранов
+        'xs-2xl': ['0.875rem', { lineHeight: '1.25rem' }],      // 14px на 2xl
+        'sm-2xl': ['1rem', { lineHeight: '1.5rem' }],           // 16px на 2xl
+        'base-2xl': ['1.125rem', { lineHeight: '1.75rem' }],    // 18px на 2xl
+        'lg-2xl': ['1.25rem', { lineHeight: '1.875rem' }],      // 20px на 2xl
+        'xl-2xl': ['1.5rem', { lineHeight: '2rem' }],           // 24px на 2xl
+        '2xl-2xl': ['1.875rem', { lineHeight: '2.25rem' }],     // 30px на 2xl
+        '3xl-2xl': ['2.25rem', { lineHeight: '2.5rem' }],       // 36px на 2xl
+        '4xl-2xl': ['3rem', { lineHeight: '1' }],               // 48px на 2xl
+        '5xl-2xl': ['3.75rem', { lineHeight: '1' }],            // 60px на 2xl
+        '6xl-2xl': ['4.5rem', { lineHeight: '1' }],             // 72px на 2xl
+        '7xl-2xl': ['5rem', { lineHeight: '1' }],               // 80px на 2xl
 
         // Адаптивные размеры для разных экранов
         'responsive-sm': [
@@ -129,8 +145,8 @@ module.exports = {
 
       // Кастомные шрифты
       fontFamily: {
-        'sans': ['Montserrat', 'system-ui', 'sans-serif'], // Чистый и современный
-        'display': ['"Dancing Script"', 'cursive'], // Веселый и аппетитный акцент
+        'sans': ['Montserrat', 'system-ui', 'sans-serif'],
+        'display': ['"Dancing Script"', 'cursive'],
         'body': ['Montserrat', 'system-ui', 'sans-serif'],
       },
 
@@ -165,8 +181,21 @@ module.exports = {
         'relaxed': '1.625',
         'loose': '2',
       },
-    },
 
+      // Увеличенные spacing для больших экранов
+      spacing: {
+        '18': '4.5rem',
+        '88': '22rem',
+        '128': '32rem',
+        '144': '36rem',
+      },
+
+      // Увеличенные border radius
+      borderRadius: {
+        '4xl': '2rem',
+        '5xl': '2.5rem',
+      }
+    },
   },
   plugins: [],
 }

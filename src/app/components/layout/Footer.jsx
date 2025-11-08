@@ -7,7 +7,7 @@ const Footer = () => {
                     {/* Лого и описание */}
                     <div className="lg:col-span-2">
                         <div className="flex items-center gap-2 mb-4">
-                        
+
                             <span className="text-xl font-bold font-display">ВкусноДом</span>
                         </div>
                         <p className="text-bakery-200 text-sm leading-relaxed max-w-md">
@@ -41,13 +41,13 @@ const Footer = () => {
                 </div>
 
                 {/* Нижняя часть */}
-                <div className="border-t border-bakery-1000 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
-                    <div className="text-bakery-300 text-sm mb-4 md:mb-0">
+                <div className="border-t border-bakery-400 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
+                    <div className="text-bakery-200 text-sm mb-4 md:mb-0">
                         © 2025 ВкусноДом. Все права защищены.
                     </div>
                     <div className="flex gap-4">
-                        <a href="#" className="text-bakery-300 hover:text-white transition-colors text-sm">Политика конфиденциальности</a>
-                        <a href="#" className="text-bakery-300 hover:text-white transition-colors text-sm">Условия использования</a>
+                        <a href="#" className="text-bakery-200 hover:text-white transition-colors text-sm">Политика конфиденциальности</a>
+                        <a href="#" className="text-bakery-200 hover:text-white transition-colors text-sm">Условия использования</a>
                     </div>
                 </div>
             </div>

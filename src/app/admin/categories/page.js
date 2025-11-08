@@ -2,7 +2,6 @@ import { getCategories, getCategoryStats } from '../../actions/admin/category.ac
 import StatsOverview from './components/stats-overview';
 import CategoriesTable from './components/categories-table';
 import SearchFilters from './components/search-filters';
-import CategoriesFilters from './components/search-filters';
 import Link from 'next/link';
 
 export default async function CategoriesPage({ searchParams }) {
@@ -38,7 +37,6 @@ export default async function CategoriesPage({ searchParams }) {
         <div className="p-6 border-b border-gray-100 animate-slide-in-left">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <SearchFilters />
-            <CategoriesFilters />
           </div>
         </div>
         

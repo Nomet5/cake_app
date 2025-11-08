@@ -1,4 +1,4 @@
-import { getCategoryById } from '@/lib/actions/category.actions';
+import { getCategoryById } from '../../../actions/admin/category.actions';
 import { notFound } from 'next/navigation';
 import CategoryInfo from './components/category-info';
 import CategoryStats from './components/category-stats';

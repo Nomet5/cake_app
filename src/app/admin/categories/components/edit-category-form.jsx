@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateCategory, deleteCategory } from '../../../actions/admin/category.actions';
+import { AnimatedContainer, AnimatedButton } from '../../Components//animation-component';
 
 export default function EditCategoryForm({ category }) {
   const router = useRouter();
@@ -91,165 +92,246 @@ export default function EditCategoryForm({ category }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
-      {/* Сообщения */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 animate-shake">
-          <div className="flex items-center">
-            <svg className="w-5 h-5 text-red-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p className="text-red-800 text-sm">{error}</p>
-          </div>
-        </div>
-      )}
+    <AnimatedContainer animation="fadeInUp" duration="normal">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Сообщения об ошибках и успехе */}
+        {error && (
+          <AnimatedContainer animation="shake" duration="fast">
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+              <div className="flex items-center">
+                <svg className="w-5 h-5 text-red-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-red-800 text-sm">{error}</p>
+              </div>
+            </div>
+          </AnimatedContainer>
+        )}
 
-      {success && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 animate-fade-in">
-          <div className="flex items-center">
-            <svg className="w-5 h-5 text-green-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p className="text-green-800 text-sm">{success}</p>
-          </div>
-        </div>
-      )}
+        {success && (
+          <AnimatedContainer animation="fadeIn" duration="normal">
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+              <div className="flex items-center">
+                <svg className="w-5 h-5 text-green-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-green-800 text-sm">{success}</p>
+              </div>
+            </div>
+          </AnimatedContainer>
+        )}
 
-      {/* Поля формы */}
-      <div className="grid grid-cols-1 gap-6">
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-            Название категории *
-          </label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            defaultValue={category.name}
-            required
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:border-gray-400"
-            placeholder="Введите название категории"
-          />
-        </div>
+        {/* Основные поля формы */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Название категории */}
+          <AnimatedContainer animation="fadeInUp" delay={100} className="lg:col-span-2">
+            <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-all duration-300">
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-3">
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                  Название категории *
+                </div>
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                defaultValue={category.name}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 text-sm"
+                placeholder="Введите название категории"
+              />
+            </div>
+          </AnimatedContainer>
 
-        <div>
-          <label htmlFor="sortOrder" className="block text-sm font-medium text-gray-700 mb-2">
-            Порядок сортировки
-          </label>
-          <input
-            type="number"
-            id="sortOrder"
-            name="sortOrder"
-            defaultValue={category.sortOrder}
-            min="0"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:border-gray-400"
-          />
-          <p className="mt-1 text-sm text-gray-500">
-            Категории сортируются по возрастанию этого значения
-          </p>
-        </div>
+          {/* Порядок сортировки */}
+          <AnimatedContainer animation="fadeInUp" delay={150}>
+            <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-all duration-300">
+              <label htmlFor="sortOrder" className="block text-sm font-medium text-gray-700 mb-3">
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+                  Порядок сортировки
+                </div>
+              </label>
+              <input
+                type="number"
+                id="sortOrder"
+                name="sortOrder"
+                defaultValue={category.sortOrder}
+                min="0"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-300 text-sm"
+              />
+              <p className="mt-2 text-xs text-gray-500">
+                Категории сортируются по возрастанию этого значения
+              </p>
+            </div>
+          </AnimatedContainer>
 
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            id="isActive"
-            name="isActive"
-            value="true"
-            defaultChecked={category.isActive}
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-all duration-300"
-          />
-          <label htmlFor="isActive" className="ml-2 block text-sm text-gray-700">
-            Активная категория
-          </label>
+          {/* Статус активности */}
+          <AnimatedContainer animation="fadeInUp" delay={200}>
+            <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-all duration-300">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                <div className="flex items-center">
+                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                  Статус категории
+                </div>
+              </label>
+              <div className="flex items-center space-x-3">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    id="isActive"
+                    name="isActive"
+                    value="true"
+                    defaultChecked={category.isActive}
+                    className="sr-only"
+                  />
+                  <label
+                    htmlFor="isActive"
+                    className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors duration-300 ease-in-out ${
+                      category.isActive ? 'bg-green-500' : 'bg-gray-300'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-300 ease-in-out ${
+                        category.isActive ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </label>
+                </div>
+                <span className="text-sm text-gray-700">
+                  {category.isActive ? 'Активная' : 'Неактивная'}
+                </span>
+              </div>
+            </div>
+          </AnimatedContainer>
         </div>
 
         {/* Статистика категории */}
-        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Статистика категории</h4>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-gray-500">ID категории:</span>
-              <span className="ml-2 font-medium text-gray-900">{category.id}</span>
-            </div>
-            <div>
-              <span className="text-gray-500">Товаров:</span>
-              <span className="ml-2 font-medium text-gray-900">{category._count?.products || 0}</span>
-            </div>
-            <div>
-              <span className="text-gray-500">Дата создания:</span>
-              <span className="ml-2 font-medium text-gray-900">
-                {new Date(category.createdAt).toLocaleDateString('ru-RU')}
-              </span>
-            </div>
-            <div>
-              <span className="text-gray-500">Последнее обновление:</span>
-              <span className="ml-2 font-medium text-gray-900">
-                {new Date(category.updatedAt).toLocaleDateString('ru-RU')}
-              </span>
+        <AnimatedContainer animation="fadeInUp" delay={250}>
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-5">
+            <h4 className="text-sm font-medium text-blue-900 mb-4 flex items-center">
+              <svg className="w-4 h-4 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              Статистика категории
+            </h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-lg font-bold text-blue-900">{category.id}</div>
+                <div className="text-xs text-blue-700">ID категории</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-blue-900">{category._count?.products || 0}</div>
+                <div className="text-xs text-blue-700">Товаров</div>
+              </div>
+              <div className="text-center">
+                <div className="text-sm font-medium text-blue-900">
+                  {new Date(category.createdAt).toLocaleDateString('ru-RU')}
+                </div>
+                <div className="text-xs text-blue-700">Дата создания</div>
+              </div>
+              <div className="text-center">
+                <div className="text-sm font-medium text-blue-900">
+                  {new Date(category.updatedAt).toLocaleDateString('ru-RU')}
+                </div>
+                <div className="text-xs text-blue-700">Последнее обновление</div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </AnimatedContainer>
 
-      {/* Кнопки действий */}
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6 border-t border-gray-200">
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={handleToggleActive}
-            disabled={isLoading}
-            className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 hover-lift disabled:opacity-50 ${
-              category.isActive 
-                ? 'bg-orange-600 text-white hover:bg-orange-700' 
-                : 'bg-green-600 text-white hover:bg-green-700'
-            }`}
-          >
-            {category.isActive ? 'Деактивировать' : 'Активировать'}
-          </button>
-          
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={isLoading || isDeleting}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-300 hover-lift disabled:opacity-50 flex items-center gap-2"
-          >
-            {isDeleting ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                Удаление...
-              </>
-            ) : (
-              'Удалить категорию'
-            )}
-          </button>
-        </div>
+        {/* Кнопки действий */}
+        <AnimatedContainer animation="fadeInUp" delay={300}>
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6 border-t border-gray-200">
+            {/* Левая группа кнопок - действия с категорией */}
+            <div className="flex flex-wrap gap-3">
+              <AnimatedButton
+                type="button"
+                onClick={handleToggleActive}
+                disabled={isLoading}
+                variant={category.isActive ? "warning" : "success"}
+                size="md"
+              >
+                {category.isActive ? (
+                  <>
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Деактивировать
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Активировать
+                  </>
+                )}
+              </AnimatedButton>
+              
+              <AnimatedButton
+                type="button"
+                onClick={handleDelete}
+                disabled={isLoading || isDeleting}
+                variant="danger"
+                size="md"
+              >
+                {isDeleting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Удаление...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Удалить категорию
+                  </>
+                )}
+              </AnimatedButton>
+            </div>
 
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            disabled={isLoading}
-            className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all duration-300 hover-lift disabled:opacity-50"
-          >
-            Отмена
-          </button>
-          
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 hover-lift disabled:opacity-50 flex items-center gap-2"
-          >
-            {isLoading ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                Сохранение...
-              </>
-            ) : (
-              'Сохранить изменения'
-            )}
-          </button>
-        </div>
-      </div>
-    </form>
+            {/* Правая группа кнопок - навигация и сохранение */}
+            <div className="flex flex-wrap gap-3">
+              <AnimatedButton
+                type="button"
+                onClick={() => router.back()}
+                disabled={isLoading}
+                variant="secondary"
+                size="md"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Отмена
+              </AnimatedButton>
+              
+              <AnimatedButton
+                type="submit"
+                disabled={isLoading}
+                variant="primary"
+                size="md"
+              >
+                {isLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Сохранение...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Сохранить изменения
+                  </>
+                )}
+              </AnimatedButton>
+            </div>
+          </div>
+        </AnimatedContainer>
+      </form>
+    </AnimatedContainer>
   );
 }

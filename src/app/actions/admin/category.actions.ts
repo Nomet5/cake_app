@@ -252,12 +252,21 @@ export async function bulkUpdateCategories(categoryIds: number[], isActive: bool
   }
 }
 
-// Остальные функции остаются без изменений
 // READ (List) - Получение списка категорий
 export async function getCategories() {
   try {
     const categories = await prisma.category.findMany({
       include: {
+        products: {
+          select: {
+            id: true,
+            name: true,
+            isAvailable: true
+          },
+          where: {
+            isAvailable: true // только доступные товары
+          }
+        },
         _count: {
           select: {
             products: true

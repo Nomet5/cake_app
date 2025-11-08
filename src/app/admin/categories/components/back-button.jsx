@@ -1,19 +1,37 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 export default function BackButton({ 
   href, 
   children = 'Назад', 
-  className = '' 
+  className = '',
+  fallbackHref // Добавляем опциональный fallback URL
 }) {
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleClick = () => {
     if (href) {
       router.push(href);
+    } else if (fallbackHref) {
+      // Если указан fallbackHref, используем его
+      router.push(fallbackHref);
     } else {
-      router.back();
+      // Определяем куда вернуться на основе текущего пути
+      const isEditPage = pathname.includes('/edit');
+      const isCategoryDetailPage = pathname.match(/\/admin\/categories\/\d+$/);
+      
+      if (isEditPage) {
+        // Если на странице редактирования - возвращаемся к списку категорий
+        router.push('/admin/categories');
+      } else if (isCategoryDetailPage) {
+        // Если на странице деталей категории - возвращаемся к списку категорий
+        router.push('/admin/categories');
+      } else {
+        // В остальных случаях используем стандартное поведение
+        router.back();
+      }
     }
   };
 
@@ -24,7 +42,7 @@ export default function BackButton({
         inline-flex items-center px-4 py-2 border border-gray-300 
         rounded-lg shadow-sm text-sm font-medium text-gray-700 
         bg-white hover:bg-gray-50 transition-all duration-300
-        hover-lift hover:shadow-blue-200
+        hover-lift hover:shadow-md group
         ${className}
       `}
     >

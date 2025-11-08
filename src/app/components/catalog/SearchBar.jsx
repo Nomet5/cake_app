@@ -22,7 +22,7 @@ const SearchBar = ({ autoFocus = false }) => {
     }
 
     return (
-        <div className="relative w-full max-w-md">
+        <div className="relative w-full min-w-[100px] md:min-w-[200px] lg:min-w-[300px]">
             <form onSubmit={handleSearch}>
                 <div className="relative">
                     <input
@@ -31,13 +31,13 @@ const SearchBar = ({ autoFocus = false }) => {
                         onChange={(e) => setQuery(e.target.value)}
                         onKeyPress={handleKeyPress}
                         placeholder="Поиск блюд или пекарей..."
-                        className="w-full pl-4 pr-10 py-3 border border-bakery-200 rounded-xl focus:ring-2 focus:ring-bakery-400 focus:border-transparent transition-all bg-bakery-50 font-body text-bakery-1100 placeholder-bakery-1050"
+                        className="w-full pl-4 pr-12 py-3 border border-bakery-200 rounded-xl focus:ring-2 focus:ring-bakery-400 focus:border-transparent transition-all bg-bakery-50 font-body text-bakery-1100 placeholder-bakery-1050 text-lg" /* добавил text-lg */
                         autoFocus={autoFocus}
                     />
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                         <button
                             type="submit"
-                            className="p-1 text-bakery-1050 hover:text-bakery-500 transition-colors"
+                            className="p-1 text-bakery-1050 hover:text-bakery-500 transition-colors text-xl" /* увеличил иконку */
                         >
                             🔍
                         </button>

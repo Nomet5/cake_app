@@ -129,10 +129,9 @@ module.exports = {
 
       // Кастомные шрифты
       fontFamily: {
-        'roboto': ['Roboto', 'system-ui', 'sans-serif'],
-        'inter': ['Inter', 'system-ui', 'sans-serif'],
-        'display': ['Roboto', 'system-ui', 'sans-serif'],     // Для заголовков
-        'body': ['Inter', 'system-ui', 'sans-serif'],         // Для основного текста
+        'sans': ['Montserrat', 'system-ui', 'sans-serif'], // Чистый и современный
+        'display': ['"Dancing Script"', 'cursive'], // Веселый и аппетитный акцент
+        'body': ['Montserrat', 'system-ui', 'sans-serif'],
       },
 
       // Font weights

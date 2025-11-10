@@ -1,7 +1,10 @@
 // src/app/admin/orders/page.js
 import { getOrders, getOrderStats } from "../../actions/admin/order.actions";
 import Link from "next/link";
-import DeleteOrderModal from "../Components/DeliteOrderModal";
+import DeleteOrderModal from "./components/DeleteOrderModal";
+import StatsCard from "./components/statsCard";
+import OrderFilters from "./components/OrderFilters";
+import OrdersTable from "./components/OrdersTable";
 
 export default async function OrdersPage({ searchParams }) {
   const [orders, stats] = await Promise.all([getOrders(), getOrderStats()]);
@@ -11,215 +14,103 @@ export default async function OrdersPage({ searchParams }) {
     (order) => order.id === parseInt(deleteOrderId)
   );
 
+  // Фильтрация заказов по searchParams
+  const filter = searchParams.filter || 'all';
+  const filteredOrders = orders.filter(order => {
+    if (filter === 'all') return true;
+    if (filter === 'pending') return ['PENDING', 'CONFIRMED', 'PREPARING'].includes(order.status);
+    if (filter === 'confirmed') return order.status === 'CONFIRMED';
+    if (filter === 'preparing') return order.status === 'PREPARING';
+    if (filter === 'delivered') return order.status === 'DELIVERED';
+    if (filter === 'cancelled') return order.status === 'CANCELLED';
+    return true;
+  });
+
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Заказы</h1>
-          <p className="text-gray-600">
-            Всего: {stats.total} | В обработке: {stats.pending} | Завершено:{" "}
-            {stats.completed}
-          </p>
+    <div className="min-h-screen bg-gray-50 py-6">
+      <div className="min-w-full mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Заголовок и кнопки */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+          <div className="mb-4 sm:mb-0">
+            <h1 className="text-2xl font-bold text-gray-900">Управление заказами</h1>
+            <p className="text-gray-600 mt-1 text-sm">
+              Всего заказов: {stats.total} • В обработке: {stats.pending} • Завершено: {stats.completed}
+            </p>
+          </div>
+          <div className="flex space-x-3">
+            <Link
+              href="/admin/orders/create"
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm text-sm font-medium"
+            >
+              <span className="mr-2">+</span>
+              Создать заказ
+            </Link>
+          </div>
         </div>
-        <div className="flex space-x-3">
-          <Link
-            href="/admin/orders?filter=pending"
-            className="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700"
-          >
-            В обработке
-          </Link>
-          <Link
-            href="/admin/orders/create"
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-          >
-            + Создать заказ
-          </Link>
+          
+        {/* Статистика */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <StatsCard
+            title="Всего заказов"
+            value={stats.total}
+            icon="📦"
+            color="blue"
+            description="Заказов в системе"
+          />
+          <StatsCard
+            title="В обработке"
+            value={stats.pending}
+            icon="⏳"
+            color="yellow"
+            description="Требуют внимания"
+          />
+          <StatsCard
+            title="Завершено"
+            value={stats.completed}
+            icon="✅"
+            color="green"
+            description="Успешно выполнено"
+          />
+          <StatsCard
+            title="Общая выручка"
+            value={stats.totalRevenue}
+            icon="💰"
+            color="purple"
+            description="Сумма всех заказов"
+            isPrice={true}
+          />
         </div>
-      </div>
+          
+        {/* Фильтры */}
+        <div className="mb-6">
+          <OrderFilters />
+        </div>
 
-      {/* Статистика */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <span className="text-blue-600">📦</span>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-600">Всего заказов</p>
-              <p className="text-2xl font-bold">{stats.total}</p>
-            </div>
+        {/* Таблица заказов */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">
+              Список заказов ({filteredOrders.length})
+            </h2>
+            <p className="text-sm text-gray-500">
+              Отсортировано по дате создания
+            </p>
           </div>
+          <OrdersTable orders={filteredOrders} />
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex items-center">
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <span className="text-yellow-600">⏳</span>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-600">В обработке</p>
-              <p className="text-2xl font-bold">{stats.pending}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <span className="text-green-600">✅</span>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-600">Завершено</p>
-              <p className="text-2xl font-bold">{stats.completed}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <span className="text-purple-600">💰</span>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-600">Выручка</p>
-              <p className="text-2xl font-bold">
-                {stats.totalRevenue.toLocaleString("ru-RU")} ₽
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Таблица заказов */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                ID
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Номер
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Пользователь
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Повар
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Сумма
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Статус
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Оплата
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Дата
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                Действия
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {orders.map((order) => (
-              <tr key={order.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4">{order.id}</td>
-                <td className="px-6 py-4 font-medium">{order.orderNumber}</td>
-                <td className="px-6 py-4">
-                  <div>
-                    <p className="font-medium">{order.user?.firstName}</p>
-                    <p className="text-sm text-gray-500">{order.user?.email}</p>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <p className="font-medium">{order.chef?.businessName}</p>
-                  <p className="text-sm text-gray-500">
-                    {order.chef?.user?.firstName}
-                  </p>
-                </td>
-                <td className="px-6 py-4 font-medium">{order.totalAmount} ₽</td>
-                <td className="px-6 py-4">
-                  <StatusBadge status={order.status} />
-                </td>
-                <td className="px-6 py-4">
-                  <PaymentStatusBadge status={order.paymentStatus} />
-                </td>
-                <td className="px-6 py-4">
-                  {new Date(order.createdAt).toLocaleDateString("ru-RU")}
-                </td>
-                <td className="px-6 py-4 space-x-2">
-                  <Link
-                    href={`/admin/orders/${order.id}`}
-                    className="text-blue-600 hover:text-blue-900 text-sm"
-                  >
-                    Просмотреть
-                  </Link>
-                  <Link
-                    href={`/admin/orders?delete=${order.id}`}
-                    className="text-red-600 hover:text-red-900 text-sm"
-                  >
-                    Удалить
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {/* Модальное окно удаления */}
+        {deleteOrderId && orderToDelete && (
+          <DeleteOrderModal
+            orderId={parseInt(deleteOrderId)}
+            orderInfo={{
+              orderNumber: orderToDelete.orderNumber,
+              userName: orderToDelete.user?.firstName,
+              totalAmount: orderToDelete.totalAmount,
+            }}
+          />
+        )}
       </div>
-
-      {/* Модальное окно удаления */}
-      {deleteOrderId && orderToDelete && (
-        <DeleteOrderModal
-          orderId={parseInt(deleteOrderId)}
-          orderInfo={{
-            orderNumber: orderToDelete.orderNumber,
-            userName: orderToDelete.user?.firstName,
-            totalAmount: orderToDelete.totalAmount,
-          }}
-        />
-      )}
     </div>
-  );
-}
-
-// Компоненты бейджей статусов
-function StatusBadge({ status }) {
-  const statusConfig = {
-    PENDING: { color: "bg-yellow-100 text-yellow-800", label: "Ожидание" },
-    CONFIRMED: { color: "bg-blue-100 text-blue-800", label: "Подтвержден" },
-    PREPARING: { color: "bg-purple-100 text-purple-800", label: "Готовится" },
-    READY: { color: "bg-green-100 text-green-800", label: "Готов" },
-    DELIVERED: { color: "bg-green-100 text-green-800", label: "Доставлен" },
-    CANCELLED: { color: "bg-red-100 text-red-800", label: "Отменен" },
-  };
-
-  const config = statusConfig[status] || statusConfig.PENDING;
-
-  return (
-    <span
-      className={`px-2 py-1 rounded-full text-xs font-medium ${config.color}`}
-    >
-      {config.label}
-    </span>
-  );
-}
-
-function PaymentStatusBadge({ status }) {
-  const statusConfig = {
-    PENDING: { color: "bg-yellow-100 text-yellow-800", label: "Ожидание" },
-    PAID: { color: "bg-green-100 text-green-800", label: "Оплачен" },
-    FAILED: { color: "bg-red-100 text-red-800", label: "Ошибка" },
-    REFUNDED: { color: "bg-gray-100 text-gray-800", label: "Возврат" },
-  };
-
-  const config = statusConfig[status] || statusConfig.PENDING;
-
-  return (
-    <span
-      className={`px-2 py-1 rounded-full text-xs font-medium ${config.color}`}
-    >
-      {config.label}
-    </span>
   );
 }

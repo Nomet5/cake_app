@@ -1,102 +1,63 @@
 // app/admin/categories/components/create-category-form.jsx
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { createCategory } from "../../../../actions/admin/category.actions"
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createCategory } from '../../../actions/admin/category.actions';
 import { 
   AnimatedContainer, 
   AnimatedButton,
   FloatingElement,
   SubtleHover
-} from '../../../Components/animation-component'
+} from '../../Components/animation-component';
 
 export default function CreateCategoryForm({ onBack }) {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     sortOrder: 0,
     isActive: true,
     description: ''
-  })
-  const [errors, setErrors] = useState({})
-
-  const validateForm = () => {
-    const newErrors = {}
-
-    if (!formData.name.trim()) {
-      newErrors.name = 'Название категории обязательно'
-    } else if (formData.name.trim().length < 2) {
-      newErrors.name = 'Название должно быть не менее 2 символов'
-    }
-
-    if (formData.sortOrder < 0) {
-      newErrors.sortOrder = 'Порядок сортировки не может быть отрицательным'
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+  });
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    const submitFormData = new FormData();
+    submitFormData.append('name', formData.name.trim());
+    submitFormData.append('sortOrder', formData.sortOrder.toString());
+    submitFormData.append('isActive', formData.isActive.toString());
+    submitFormData.append('description', formData.description || '');
     
-    if (!validateForm()) {
-      return
-    }
-
-    setIsLoading(true)
-
     try {
-      const formDataToSend = new FormData()
-      formDataToSend.append('name', formData.name.trim())
-      formDataToSend.append('sortOrder', formData.sortOrder.toString())
-      formDataToSend.append('isActive', formData.isActive.toString())
-      formDataToSend.append('description', formData.description || '')
-
-      const result = await createCategory(formDataToSend)
+      const result = await createCategory(submitFormData);
       
-      if (result.success) {
-        router.push('/admin/categories')
-        router.refresh()
+      if (result.error) {
+        setError(result.error);
       } else {
-        setErrors({ submit: result.error })
+        // Перенаправляем на страницу категорий после успешного создания
+        router.push('/admin/categories');
+        router.refresh();
       }
-    } catch (error) {
-      setErrors({ submit: 'Произошла ошибка при создании категории' })
-      console.error('Create category error:', error)
+    } catch (err) {
+      setError('Произошла ошибка при создании категории');
+      console.error('Create category error:', err);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
-    }))
-    
-    // Очищаем ошибку при изменении поля
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }))
-    }
-  }
-
-  const getInputClasses = (fieldName) => {
-    return `
-      w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 transition-all duration-300
-      disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60
-      ${errors[fieldName] 
-        ? 'border-red-300 focus:border-red-500 focus:ring-red-100 bg-red-50' 
-        : 'border-gray-200 focus:border-blue-500 focus:ring-blue-100 bg-white hover:border-gray-300'
-      }
-    `
-  }
+    }));
+  };
 
   return (
     <AnimatedContainer
@@ -107,17 +68,19 @@ export default function CreateCategoryForm({ onBack }) {
       {/* Заголовок формы */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <button
-            onClick={onBack}
-            className="flex items-center text-gray-600 hover:text-gray-900 transition-colors duration-200 mb-4"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Назад к списку категорий
-          </button>
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="flex items-center text-gray-600 hover:text-gray-900 transition-colors duration-200 mb-4"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Назад к списку категорий
+            </button>
+          )}
           <h1 className="text-3xl font-bold text-gray-900">Создать новую категорию</h1>
-          <p className="text-gray-600 mt-2">Добавьте новую категорию для организации товаров</p>
+          <p className="text-gray-600 mt-2">Добавьте новую категорию для организации товаров в меню</p>
         </div>
         <FloatingElement speed="slow">
           <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
@@ -127,6 +90,22 @@ export default function CreateCategoryForm({ onBack }) {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Сообщение об ошибке */}
+        {error && (
+          <AnimatedContainer animation="fadeIn" duration="fast">
+            <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4">
+              <div className="flex items-center">
+                <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 mr-3">
+                  <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <p className="text-red-800 text-sm font-medium">{error}</p>
+              </div>
+            </div>
+          </AnimatedContainer>
+        )}
+
         {/* Основная информация */}
         <AnimatedContainer animation="fadeInUp" delay={100} duration="normal">
           <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl p-6 border-2 border-blue-200">
@@ -136,8 +115,9 @@ export default function CreateCategoryForm({ onBack }) {
             </h3>
             
             <div className="space-y-6">
+              {/* Название категории */}
               <div>
-                <label htmlFor="name" className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
                   <span className="w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
                   Название категории *
                 </label>
@@ -149,23 +129,18 @@ export default function CreateCategoryForm({ onBack }) {
                   onChange={handleChange}
                   required
                   disabled={isLoading}
-                  className={getInputClasses('name')}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-300 bg-white hover:border-gray-300 disabled:bg-gray-100 disabled:opacity-60"
                   placeholder="Например: Суши, Десерты, Напитки"
                 />
-                {errors.name && (
-                  <p className="mt-2 text-sm text-red-600 flex items-center">
-                    <span className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></span>
-                    {errors.name}
-                  </p>
-                )}
                 <p className="mt-2 text-sm text-gray-600 flex items-center">
                   <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mr-2"></span>
                   Укажите понятное название для категории товаров
                 </p>
               </div>
 
+              {/* Описание */}
               <div>
-                <label htmlFor="description" className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
                   <span className="w-2 h-2 bg-cyan-500 rounded-full mr-2"></span>
                   Описание категории
                 </label>
@@ -176,7 +151,7 @@ export default function CreateCategoryForm({ onBack }) {
                   onChange={handleChange}
                   rows={3}
                   disabled={isLoading}
-                  className={getInputClasses('description')}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-cyan-100 focus:border-cyan-500 transition-all duration-300 bg-white hover:border-gray-300 disabled:bg-gray-100 disabled:opacity-60 resize-none"
                   placeholder="Краткое описание категории (необязательно)"
                 />
                 <p className="mt-2 text-sm text-gray-600 flex items-center">
@@ -197,8 +172,9 @@ export default function CreateCategoryForm({ onBack }) {
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Порядок сортировки */}
               <div>
-                <label htmlFor="sortOrder" className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                <label htmlFor="sortOrder" className="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
                   <span className="w-2 h-2 bg-green-600 rounded-full mr-2"></span>
                   Порядок сортировки
                 </label>
@@ -212,24 +188,19 @@ export default function CreateCategoryForm({ onBack }) {
                     min="0"
                     max="999"
                     disabled={isLoading}
-                    className={getInputClasses('sortOrder')}
+                    className="w-full pl-4 pr-12 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-green-100 focus:border-green-500 transition-all duration-300 bg-white hover:border-gray-300 disabled:bg-gray-100 disabled:opacity-60"
                     placeholder="0"
                   />
                   <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                    <span className="text-gray-400 text-sm">#</span>
+                    <span className="text-gray-400 text-sm font-medium">#</span>
                   </div>
                 </div>
-                {errors.sortOrder && (
-                  <p className="mt-2 text-sm text-red-600 flex items-center">
-                    <span className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></span>
-                    {errors.sortOrder}
-                  </p>
-                )}
                 <p className="mt-2 text-sm text-gray-600">
                   Чем меньше число, тем выше категория в списке
                 </p>
               </div>
 
+              {/* Статус активности */}
               <div className="flex items-center justify-center md:justify-start">
                 <SubtleHover>
                   <div className="flex items-center space-x-3 p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-green-500 transition-all duration-300">
@@ -301,38 +272,28 @@ export default function CreateCategoryForm({ onBack }) {
           </div>
         </AnimatedContainer>
 
-        {/* Ошибка отправки формы */}
-        {errors.submit && (
-          <AnimatedContainer animation="fadeInUp" delay={400} duration="normal">
-            <div className="p-4 bg-red-50 border-2 border-red-200 rounded-xl">
-              <p className="text-sm text-red-600 flex items-center">
-                <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
-                {errors.submit}
-              </p>
-            </div>
-          </AnimatedContainer>
-        )}
-
         {/* Кнопки действий */}
-        <AnimatedContainer animation="fadeInUp" delay={500} duration="normal">
+        <AnimatedContainer animation="fadeInUp" delay={400} duration="normal">
           <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4 pt-6 border-t border-gray-200">
-            <AnimatedButton
-              type="button"
-              onClick={onBack}
-              disabled={isLoading}
-              variant="secondary"
-              size="lg"
-              className="w-full sm:w-auto"
-            >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Назад
-            </AnimatedButton>
+            {onBack && (
+              <AnimatedButton
+                type="button"
+                onClick={onBack}
+                disabled={isLoading}
+                variant="secondary"
+                size="lg"
+                className="w-full sm:w-auto"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Назад
+              </AnimatedButton>
+            )}
             
             <AnimatedButton
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !formData.name.trim()}
               variant="primary"
               size="lg"
               loading={isLoading}
@@ -356,5 +317,5 @@ export default function CreateCategoryForm({ onBack }) {
         </AnimatedContainer>
       </form>
     </AnimatedContainer>
-  )
+  );
 }

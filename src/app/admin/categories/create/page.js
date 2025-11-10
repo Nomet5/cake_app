@@ -1,26 +1,20 @@
-import CreateCategoryForm from '../components/create-category-modal';
-import BackButton from '../components/back-button';
+// app/admin/categories/create/page.js
+'use client';
+
+import { useRouter } from 'next/navigation';
+import CreateCategoryForm from '../components/create-category-form';
 
 export default function CreateCategoryPage() {
-  return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center animate-slide-in-right">
-        <div>
-          <h1 className="text-3xl font-bold gradient-text">
-            Создание категории
-          </h1>
-          <p className="mt-2 text-gray-600 animate-pulse-slow">
-            Заполните информацию о новой категории
-          </p>
-        </div>
-        
-        <BackButton href="/admin/categories" />
-      </div>
+  const router = useRouter();
 
-      <div className="bg-white rounded-2xl shadow-glow border border-gray-100 overflow-hidden hover-lift animate-scale-in">
-        <div className="p-6">
-          <CreateCategoryForm />
-        </div>
+  const handleBack = () => {
+    router.push('/admin/categories');
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <CreateCategoryForm onBack={handleBack} />
       </div>
     </div>
   );

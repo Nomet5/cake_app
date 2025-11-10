@@ -78,7 +78,84 @@ export async function getOrders() {
   }
 }
 
-// CREATE - Создание заказа
+// GET ACTIVE USERS - Получение активных пользователей
+export async function getActiveUsers() {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        firstName: true,
+        email: true,
+        phone: true
+      },
+      orderBy: {
+        firstName: 'asc'
+      }
+    })
+
+    return { success: true, users }
+  } catch (error) {
+    console.error('Error fetching active users:', error)
+    return { error: 'Ошибка при загрузке пользователей' }
+  }
+}
+
+// GET ACTIVE CHEFS - Получение активных поваров
+export async function getActiveChefs() {
+  try {
+    const chefs = await prisma.chef.findMany({
+      include: {
+        user: {
+          select: {
+            firstName: true,
+            email: true
+          }
+        }
+      },
+      orderBy: {
+        businessName: 'asc'
+      }
+    })
+
+    return { success: true, chefs }
+  } catch (error) {
+    console.error('Error fetching active chefs:', error)
+    return { error: 'Ошибка при загрузке поваров' }
+  }
+}
+
+// GET AVAILABLE PRODUCTS - Получение доступных товаров
+export async function getAvailableProducts() {
+  try {
+    const products = await prisma.product.findMany({
+      where: {
+        isAvailable: true
+      },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        description: true,
+        chef: {
+          select: {
+            businessName: true
+          }
+        }
+      },
+      orderBy: {
+        name: 'asc'
+      }
+    })
+
+    return { success: true, products }
+  } catch (error) {
+    console.error('Error fetching available products:', error)
+    return { error: 'Ошибка при загрузке товаров' }
+  }
+}
+
+// CREATE ORDER WITH PRODUCTS - Создание заказа с товарами
+// CREATE ORDER WITH PRODUCTS - Создание заказа с товарами
 export async function createOrder(formData: FormData) {
   try {
     const userId = parseInt(formData.get("userId") as string)
@@ -113,11 +190,7 @@ export async function createOrder(formData: FormData) {
       return { error: 'Повар не найден' }
     }
 
-    // Проверяем активен ли повар
-    if (!chef.isActive) {
-      return { error: 'Повар неактивен' }
-    }
-
+    // Создаем заказ БЕЗ поля notes
     const order = await prisma.order.create({
       data: {
         userId,
@@ -129,7 +202,54 @@ export async function createOrder(formData: FormData) {
         status: status as any,
         paymentStatus: paymentStatus as any,
         orderNumber: `ORD-${Date.now()}`
-      },
+      }
+    })
+
+    // Добавляем товары в заказ
+    const productEntries = Array.from(formData.entries())
+      .filter(([key]) => key.startsWith('products['))
+    
+    const productsMap = new Map()
+    
+    // Группируем товары по ID
+    productEntries.forEach(([key, value]) => {
+      const match = key.match(/products\[(\d+)\]\[(id|quantity)\]/)
+      if (match) {
+        const index = match[1]
+        const field = match[2]
+        
+        if (!productsMap.has(index)) {
+          productsMap.set(index, {})
+        }
+        
+        productsMap.get(index)[field] = field === 'id' ? parseInt(value as string) : parseInt(value as string)
+      }
+    })
+
+    // Добавляем товары в заказ
+    for (const [_, productData] of productsMap) {
+      if (productData.id && productData.quantity) {
+        const product = await prisma.product.findUnique({
+          where: { id: productData.id }
+        })
+
+        if (product) {
+          await prisma.orderItem.create({
+            data: {
+              orderId: order.id,
+              productId: product.id,
+              quantity: productData.quantity,
+              unitPrice: product.price,
+              totalPrice: product.price * productData.quantity
+            }
+          })
+        }
+      }
+    }
+
+    // Получаем созданный заказ с включенными данными
+    const createdOrder = await prisma.order.findUnique({
+      where: { id: order.id },
       include: {
         user: {
           select: {
@@ -141,17 +261,27 @@ export async function createOrder(formData: FormData) {
           select: {
             businessName: true
           }
+        },
+        items: {
+          include: {
+            product: {
+              select: {
+                name: true,
+                price: true
+              }
+            }
+          }
         }
       }
     })
 
     // Создаем уведомление о новом заказе
-    await createNewOrderNotification(order)
+    await createNewOrderNotification(createdOrder)
 
     revalidatePath('/admin/orders')
     revalidatePath(`/admin/users/${userId}`)
     revalidatePath(`/admin/chefs/${chefId}`)
-    return { success: true, order }
+    return { success: true, order: createdOrder }
   } catch (error) {
     console.error('Error creating order:', error)
     await createSystemNotification(
@@ -164,6 +294,9 @@ export async function createOrder(formData: FormData) {
 }
 
 // DELETE ORDER - Удаление заказа
+// В файле order.actions.ts обновите функцию deleteOrder:
+
+// DELETE ORDER - Удаление заказа (ИСПРАВЛЕННАЯ ВЕРСИЯ)
 export async function deleteOrder(id: number) {
   try {
     // Проверяем существует ли заказ
@@ -185,23 +318,31 @@ export async function deleteOrder(id: number) {
       return { error: 'Заказ не найден' }
     }
 
-    // Нельзя удалить заказ с товарами или отзывами
-    const hasItems = order.items.length > 0
-    const hasReviews = order.reviews.length > 0
+    // Начинаем транзакцию для удаления всех связанных данных
+    await prisma.$transaction(async (tx) => {
+      // Удаляем отзывы
+      if (order.reviews.length > 0) {
+        await tx.review.deleteMany({
+          where: { orderId: id }
+        })
+      }
 
-    if (hasItems || hasReviews) {
-      let errorMessage = 'Нельзя удалить заказ с '
-      const reasons = []
-      if (hasItems) reasons.push('товарами')
-      if (hasReviews) reasons.push('отзывами')
-      errorMessage += reasons.join(' или ')
-      
-      return { error: errorMessage }
-    }
+      // Удаляем товары в заказе
+      if (order.items.length > 0) {
+        await tx.orderItem.deleteMany({
+          where: { orderId: id }
+        })
+      }
 
-    // Удаляем заказ
-    await prisma.order.delete({
-      where: { id }
+      // Удаляем доставку если есть
+      await tx.delivery.deleteMany({
+        where: { orderId: id }
+      })
+
+      // Удаляем сам заказ
+      await tx.order.delete({
+        where: { id }
+      })
     })
 
     // Создаем системное уведомление об удалении заказа
@@ -219,10 +360,14 @@ export async function deleteOrder(id: number) {
     return { error: 'Ошибка при удалении заказа' }
   }
 }
-
 // GET ORDER BY ID
 export async function getOrderById(id: number) {
   try {
+    // ВАЛИДАЦИЯ ID БЕЗ CONSOLE.ERROR
+    if (!id || isNaN(id)) {
+      return { error: 'Неверный ID заказа' };
+    }
+
     const order = await prisma.order.findUnique({
       where: { id },
       include: {
@@ -263,16 +408,16 @@ export async function getOrderById(id: number) {
           take: 1
         }
       }
-    })
+    });
 
     if (!order) {
-      return { error: 'Заказ не найден' }
+      return { error: 'Заказ не найден' };
     }
 
-    return { success: true, order }
+    return { success: true, order };
   } catch (error) {
-    console.error('Error fetching order:', error)
-    return { error: 'Ошибка при получении заказа' }
+    console.error('Error fetching order:', error);
+    return { error: 'Ошибка при получении заказа' };
   }
 }
 

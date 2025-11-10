@@ -1,23 +1,19 @@
-// app/admin/orders/[id]/page.js
+// app/admin/orders/[id]/edit/page.js
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getOrderById } from '../../../actions/admin/order.actions';
-import OrderHeader from '../components/OrderHeader';
-import OrderOverview from '../components/OrderOverview';
-import OrderCustomerInfo from '../components/OrderCustomerInfo';
-import OrderItems from '../components/OrderItems';
-import OrderSummary from '../components/OrderSummary';
-import OrderDeliveryInfo from '../components/OrderDeliveryInfo';
-import OrderChefInfo from '../components/OrderChefInfo';
+import { getOrderById, updateOrder } from '../../../../actions/admin/order.actions';
+import OrderEditForm from '../../components/OrderEditForm';
+import { AnimatedContainer } from '../../../Components/animation-component';
 
-export default function OrderDetailPage() {
+export default function OrderEditPage() {
   const params = useParams();
   const router = useRouter();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const loadOrder = async () => {
@@ -57,6 +53,29 @@ export default function OrderDetailPage() {
     loadOrder();
   }, [params?.id]);
 
+  const handleSave = async (formData) => {
+    try {
+      setSaving(true);
+      const result = await updateOrder(order.id, formData);
+      
+      if (result.success) {
+        router.push(`/admin/orders/${order.id}`);
+        router.refresh();
+      } else {
+        setError(result.error || 'Ошибка при сохранении заказа');
+      }
+    } catch (err) {
+      console.error('Error saving order:', err);
+      setError('Ошибка сохранения заказа');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    router.push(`/admin/orders/${order.id}`);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-6">
@@ -95,7 +114,13 @@ export default function OrderDetailPage() {
               <p className="text-gray-600 mb-6">
                 {error}
               </p>
-            
+              
+              <button
+                onClick={() => router.push('/admin/orders')}
+                className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Вернуться к списку заказов
+              </button>
             </div>
           </div>
         </div>
@@ -105,47 +130,40 @@ export default function OrderDetailPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-6">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Заголовок */}
-        <OrderHeader 
-          order={order} 
-          onBack={() => router.push('/admin/orders')}
-        />
-
-        {/* Основная информация о заказе */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            {/* Обзор заказа */}
-            <OrderOverview order={order} />
-            
-            {/* Информация о клиенте */}
-            <OrderCustomerInfo user={order.user} />
-            
-            {/* Товары в заказе */}
-            <OrderItems items={order.items} />
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <AnimatedContainer animation="fadeInDown" duration="normal">
+          {/* Заголовок */}
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => router.push(`/admin/orders/${order.id}`)}
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Назад к заказу
+              </button>
+              
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Редактирование заказа {order.orderNumber}
+                </h1>
+                <p className="text-gray-500 text-sm">
+                  Измените необходимые поля и сохраните изменения
+                </p>
+              </div>
+            </div>
           </div>
 
-          {/* Боковая панель */}
-          <div className="space-y-6">
-            {/* Стоимость */}
-            <OrderSummary 
-              subtotal={order.subtotal}
-              deliveryFee={order.deliveryFee}
-              totalAmount={order.totalAmount}
-            />
-            
-            {/* Доставка */}
-            <OrderDeliveryInfo 
-              deliveryAddress={order.deliveryAddress}
-              delivery={order.delivery}
-            />
-            
-            {/* Повар */}
-            {order.chef && (
-              <OrderChefInfo chef={order.chef} />
-            )}
-          </div>
-        </div>
+          {/* Форма редактирования */}
+          <OrderEditForm 
+            order={order}
+            onSave={handleSave}
+            onCancel={handleCancel}
+            saving={saving}
+          />
+        </AnimatedContainer>
       </div>
     </div>
   );

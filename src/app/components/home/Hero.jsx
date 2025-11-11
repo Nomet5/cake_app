@@ -25,7 +25,7 @@ const Hero = () => {
     }
 
     return (
-        <section className="relative  py-20 overflow-hidden">
+        <section className="relative py-20 overflow-hidden">
             {/* Декоративные элементы */}
             <div className="absolute top-10 left-10 w-20 h-20 bg-bakery-300 rounded-full opacity-20 animate-pulse"></div>
             <div className="absolute bottom-20 right-20 w-16 h-16 bg-bakery-400 rounded-full opacity-30 animate-bounce"></div>
@@ -38,7 +38,7 @@ const Hero = () => {
                         <h1 className="text-4xl md:text-6xl font-bold text-bakery-1150 mb-6 font-display leading-tight">
                             Домашняя еда с{' '}
                             <motion.span
-                                className="bg-clip-text  text-bakery-400 "
+                                className="bg-clip-text text-bakery-400"
                                 animate={{
                                     backgroundPosition: ['0%', '100%', '0%']
                                 }}
@@ -77,14 +77,13 @@ const Hero = () => {
                                     className="w-full px-6 py-4 rounded-2xl border border-bakery-200 shadow-sm focus:ring-2 focus:ring-bakery-400 focus:border-transparent transition-all bg-white font-body text-bakery-1100 placeholder-bakery-1050"
                                     whileFocus={{ scale: 1.02 }}
                                 />
-                                <motion.button
+                                {/* ЗАМЕНИЛ КНОПКУ - убрал Framer Motion */}
+                                <button
                                     type="submit"
-                                    className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-bakery-400 text-white p-2 rounded-xl hover:bg-bakery-500 transition-colors shadow-sm"
-                                    whileHover={{ scale: 1.1 }}
-                                    whileTap={{ scale: 0.9 }}
+                                    className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-bakery-400 text-white p-2 rounded-xl hover:bg-bakery-500 transition-all duration-200 hover:scale-110 active:scale-95 shadow-sm"
                                 >
                                     🔍
-                                </motion.button>
+                                </button>
                             </form>
                         </div>
                     </FadeIn>

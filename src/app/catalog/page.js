@@ -10,121 +10,65 @@ import ProductCardSkeleton from '../components/product/ProductCardSkeleton'
 import TransitionWrapper from '../components/common/TransitionWrapper'
 import Link from 'next/link'
 
-// Расширенные данные товаров для фильтрации
-const mockProducts = [
-    {
-        id: 1,
-        name: 'Шоколадный торт "Вечер в Париже"',
-        price: 2400,
-        rating: 4.9,
-        reviews: 127,
-        baker: 'Пекарня "У Марии"',
-        weight: '2.5 кг',
-        servings: '12-14 порций',
-        category: 'Торты',
-        dietary: [],
-        isPopular: true
-    },
-    {
-        id: 2,
-        name: 'Медовик классический',
-        price: 1800,
-        oldPrice: 2000,
-        rating: 4.7,
-        reviews: 89,
-        baker: 'Пекарня "У Марии"',
-        weight: '2 кг',
-        servings: '10-12 порций',
-        category: 'Торты',
-        dietary: [],
-        isNew: true
-    },
-    {
-        id: 3,
-        name: 'Яблочный пирог с корицей',
-        price: 850,
-        rating: 4.6,
-        reviews: 45,
-        baker: 'Домашняя кухня "Вкусно"',
-        weight: '1.2 кг',
-        servings: '6-8 порций',
-        category: 'Пироги',
-        dietary: ['Без яиц']
-    },
-    {
-        id: 4,
-        name: 'Чизкейк Нью-Йорк',
-        price: 2200,
-        rating: 4.8,
-        reviews: 67,
-        baker: 'Кондитерская "Сладости"',
-        weight: '2 кг',
-        servings: '10-12 порций',
-        category: 'Десерты',
-        dietary: []
-    },
-    {
-        id: 5,
-        name: 'Тирамису итальянский',
-        price: 1200,
-        rating: 4.7,
-        reviews: 34,
-        baker: 'Кондитерская "Сладости"',
-        weight: '1.5 кг',
-        servings: '8-10 порций',
-        category: 'Десерты',
-        dietary: [],
-        isNew: true
-    },
-    {
-        id: 6,
-        name: 'Морковный торт веганский',
-        price: 1600,
-        rating: 4.5,
-        reviews: 23,
-        baker: 'Пекарня "У Марии"',
-        weight: '1.8 кг',
-        servings: '10-12 порций',
-        category: 'Торты',
-        dietary: ['Веганское', 'Без яиц']
-    },
-    {
-        id: 7,
-        name: 'Бородинский хлеб',
-        price: 450,
-        rating: 4.6,
-        reviews: 78,
-        baker: 'Домашняя кухня "Вкусно"',
-        weight: '0.8 кг',
-        servings: '8-10 порций',
-        category: 'Хлеб',
-        dietary: ['Без сахара']
-    },
-    {
-        id: 8,
-        name: 'Круассаны с шоколадом',
-        price: 300,
-        rating: 4.4,
-        reviews: 56,
-        baker: 'Кондитерская "Сладости"',
-        weight: '0.4 кг',
-        servings: '4 порции',
-        category: 'Утренняя выпечка',
-        dietary: []
-    },
-    {
-        id: 9,
-        name: 'Пирог с вишней',
-        price: 950,
-        rating: 4.6,
-        reviews: 34,
-        baker: 'Домашняя кухня "Вкусно"',
-        weight: '1.3 кг',
-        servings: '6-8 порций',
-        category: 'Пироги',
-        dietary: ['Без глютена']
+// Функция для получения товаров из API
+async function getProducts(searchQuery = '', selectedCategories = []) {
+    try {
+        const url = new URL(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/products`)
+
+        if (searchQuery) {
+            url.searchParams.set('search', searchQuery)
+        }
+
+        if (selectedCategories.length > 0) {
+            url.searchParams.set('categories', selectedCategories.join(','))
+        }
+
+        const response = await fetch(url, {
+            next: { revalidate: 60 } // Кешируем на 60 секунд
+        })
+
+        if (!response.ok) {
+            throw new Error('Ошибка загрузки товаров')
+        }
+
+        const data = await response.json()
+
+        if (data.success) {
+            return data.data
+        } else {
+            console.error('API Error:', data.error)
+            return []
+        }
+    } catch (error) {
+        console.error('Error fetching products:', error)
+        return []
     }
-]
+}
+
+// Функция для получения категорий из API
+async function getCategories() {
+    try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/categories`, {
+            next: { revalidate: 300 } // Кешируем на 5 минут
+        })
+
+        if (!response.ok) {
+            throw new Error('Ошибка загрузки категорий')
+        }
+
+        const data = await response.json()
+
+        if (data.success) {
+            return data.data
+        } else {
+            console.error('API Error:', data.error)
+            return []
+        }
+    } catch (error) {
+        console.error('Error fetching categories:', error)
+        return []
+    }
+}
 
 export default function CatalogPage() {
     const [filters, setFilters] = useState({
@@ -135,50 +79,52 @@ export default function CatalogPage() {
     const [sortBy, setSortBy] = useState('popular')
     const [isLoading, setIsLoading] = useState(true)
     const [isFiltersOpen, setIsFiltersOpen] = useState(false)
+    const [products, setProducts] = useState([])
+    const [availableCategories, setAvailableCategories] = useState([])
 
     // Получаем параметры поиска из URL
     const searchParams = useSearchParams()
     const searchQuery = searchParams.get('search') || ''
 
-    // Имитация загрузки данных
+    // Загружаем товары и категории при загрузке страницы
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false)
-        }, 800)
+        const loadData = async () => {
+            setIsLoading(true)
 
-        return () => clearTimeout(timer)
-    }, [searchQuery, filters, sortBy])
+            // Параллельно загружаем товары и категории
+            const [productsData, categoriesData] = await Promise.all([
+                getProducts(searchQuery, filters.categories),
+                getCategories()
+            ])
+
+            setProducts(productsData)
+            setAvailableCategories(categoriesData)
+            setIsLoading(false)
+        }
+
+        loadData()
+    }, [searchQuery])
 
     // Функция применения фильтров
-    const handleFiltersChange = (newFilters) => {
+    const handleFiltersChange = async (newFilters) => {
         setIsLoading(true)
         setFilters(newFilters)
+
+        // Перезагружаем товары с новыми фильтрами
+        const productsData = await getProducts(searchQuery, newFilters.categories)
+        setProducts(productsData)
+
         // На мобильных закрываем фильтры после применения
         if (window.innerWidth < 1024) {
             setIsFiltersOpen(false)
         }
+
+        setIsLoading(false)
     }
 
-    // Функция фильтрации и поиска товаров
+    // Функция фильтрации и сортировки товаров
     const filteredProducts = useMemo(() => {
-        let filtered = mockProducts
-
-        // Поиск по запросу
-        if (searchQuery) {
-            const query = searchQuery.toLowerCase()
-            filtered = filtered.filter(product =>
-                product.name.toLowerCase().includes(query) ||
-                product.baker.toLowerCase().includes(query) ||
-                product.category.toLowerCase().includes(query)
-            )
-        }
-
-        // Фильтрация по категориям
-        if (filters.categories.length > 0) {
-            filtered = filtered.filter(product =>
-                filters.categories.includes(product.category)
-            )
-        }
+        let filtered = products
 
         // Фильтрация по цене
         filtered = filtered.filter(product =>
@@ -216,16 +162,16 @@ export default function CatalogPage() {
         }
 
         return filtered
-    }, [filters, sortBy, searchQuery])
+    }, [products, filters, sortBy])
 
     // Ключ для анимации перехода
     const contentKey = `${isLoading}-${filteredProducts.length}-${searchQuery}`
 
     return (
-        <div className="min-h-screen bg-bakery-50">
+        <div className="min-h-screen bg-bakery-50 flex flex-col">
             <Header />
 
-            <div className="container mx-auto px-4 py-8">
+            <div className="flex-1 container mx-auto px-4 py-8">
                 {/* Хлебные крошки */}
                 <div className="flex items-center gap-2 text-bakery-1050 text-sm mb-6 font-body">
                     <Link href="/" className="hover:text-bakery-500 transition-colors">Главная</Link>
@@ -248,6 +194,7 @@ export default function CatalogPage() {
                         {!isLoading && (
                             <p className="text-bakery-1050 font-body text-sm lg:text-base">
                                 Найдено {filteredProducts.length} товаров
+                                {availableCategories.length > 0 && ` в ${availableCategories.length} категориях`}
                             </p>
                         )}
                     </div>
@@ -274,6 +221,7 @@ export default function CatalogPage() {
                             onChange={(e) => {
                                 setIsLoading(true)
                                 setSortBy(e.target.value)
+                                setTimeout(() => setIsLoading(false), 300)
                             }}
                             disabled={isLoading}
                         >
@@ -305,6 +253,7 @@ export default function CatalogPage() {
                                 selectedCategories={filters.categories}
                                 priceRange={filters.priceRange}
                                 selectedDietary={filters.dietary}
+                                availableCategories={availableCategories} // Передаем реальные категории
                             />
                         </div>
                     </aside>
@@ -331,7 +280,9 @@ export default function CatalogPage() {
                                     <p className="text-bakery-1050 mb-6 lg:mb-8 font-body text-sm lg:text-base">
                                         {searchQuery
                                             ? `По запросу "${searchQuery}" ничего не найдено. Попробуйте изменить поисковый запрос.`
-                                            : 'Попробуйте изменить параметры фильтров'
+                                            : products.length === 0
+                                                ? 'В каталоге пока нет товаров. Зайдите позже.'
+                                                : 'Попробуйте изменить параметры фильтров'
                                         }
                                     </p>
                                     <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -364,31 +315,6 @@ export default function CatalogPage() {
                         </TransitionWrapper>
                     </main>
                 </div>
-
-                {/* Пагинация (только когда есть товары) */}
-                {!isLoading && filteredProducts.length > 0 && (
-                    <div className="flex justify-center items-center gap-1 lg:gap-2 mt-8 lg:mt-12">
-                        <button className="w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center text-bakery-1050 hover:text-bakery-500 transition-colors font-body text-sm lg:text-base">
-                            ←
-                        </button>
-                        <button className="w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center bg-bakery-500 text-white rounded-xl font-body text-sm lg:text-base">
-                            1
-                        </button>
-                        <button className="w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center text-bakery-1050 hover:text-bakery-500 transition-colors font-body text-sm lg:text-base">
-                            2
-                        </button>
-                        <button className="w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center text-bakery-1050 hover:text-bakery-500 transition-colors font-body text-sm lg:text-base">
-                            3
-                        </button>
-                        <span className="text-bakery-1050 px-1 lg:px-2 font-body text-sm lg:text-base">...</span>
-                        <button className="w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center text-bakery-1050 hover:text-bakery-500 transition-colors font-body text-sm lg:text-base">
-                            5
-                        </button>
-                        <button className="w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center text-bakery-1050 hover:text-bakery-500 transition-colors font-body text-sm lg:text-base">
-                            →
-                        </button>
-                    </div>
-                )}
             </div>
 
             <Footer />

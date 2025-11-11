@@ -1,28 +1,33 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Button from '../common/Button'
 
 const FilterSidebar = ({
     onFiltersChange,
     selectedCategories = [],
     priceRange = [0, 5000],
-    selectedDietary = []
+    selectedDietary = [],
+    availableCategories = [] // Добавляем пропс с реальными категориями из API
 }) => {
     const [localPriceRange, setLocalPriceRange] = useState(priceRange)
     const [localSelectedCategories, setLocalSelectedCategories] = useState(selectedCategories)
     const [localSelectedDietary, setLocalSelectedDietary] = useState(selectedDietary)
 
-    const categories = [
-        { name: 'Торты', count: 45 },
-        { name: 'Пироги', count: 67 },
-        { name: 'Хлеб', count: 34 },
-        { name: 'Десерты', count: 89 },
-        { name: 'Обеды и основные блюда', count: 23 },
-        { name: 'Сладкая выпечка', count: 56 },
-        { name: 'Утренняя выпечка', count: 41 }
-    ]
+    // Синхронизируем локальное состояние с пропсами
+    useEffect(() => {
+        setLocalSelectedCategories(selectedCategories)
+    }, [selectedCategories])
 
+    useEffect(() => {
+        setLocalPriceRange(priceRange)
+    }, [priceRange])
+
+    useEffect(() => {
+        setLocalSelectedDietary(selectedDietary)
+    }, [selectedDietary])
+
+    // Статические данные для диетических особенностей
     const dietaryFeatures = [
         { name: 'Веганское', count: 34 },
         { name: 'Без глютена', count: 28 },
@@ -74,49 +79,64 @@ const FilterSidebar = ({
     }
 
     return (
-        <div className="bg-white rounded-2xl p-6 shadow-bakery-soft border border-bakery-200 2xl:p-8 2xl:rounded-3xl">
-            <div className="flex items-center justify-between mb-6 2xl:mb-8">
-                <h3 className="font-bold text-bakery-1150 text-lg font-display 2xl:text-xl">
+        <div className="bg-white rounded-2xl p-6 shadow-bakery-soft border border-bakery-200">
+            <div className="flex items-center justify-between mb-6">
+                <h3 className="font-bold text-bakery-1150 text-lg font-display">
                     Фильтры
                 </h3>
                 <button
-                    className="text-bakery-500 hover:text-bakery-600 text-sm font-body 2xl:text-base"
+                    className="text-bakery-500 hover:text-bakery-600 text-sm font-body"
                     onClick={resetFilters}
                 >
                     Сбросить все
                 </button>
             </div>
 
-            {/* Категории товаров */}
-            <div className="mb-6 2xl:mb-8">
-                <h4 className="font-semibold text-bakery-1100 mb-3 font-body 2xl:text-lg 2xl:mb-4">Категории товаров</h4>
-                <div className="space-y-2 2xl:space-y-3">
-                    {categories.map((category) => (
-                        <label key={category.name} className="flex items-center justify-between group cursor-pointer">
-                            <div className="flex items-center">
-                                <input
-                                    type="checkbox"
-                                    checked={localSelectedCategories.includes(category.name)}
-                                    onChange={() => toggleCategory(category.name)}
-                                    className="w-4 h-4 text-bakery-500 border-bakery-300 rounded focus:ring-bakery-400 2xl:w-5 2xl:h-5"
-                                />
-                                <span className="ml-2 text-bakery-1050 text-sm group-hover:text-bakery-1100 transition-colors font-body 2xl:text-base 2xl:ml-3">
-                                    {category.name}
+            {/* Категории товаров - теперь с реальными данными из API */}
+            <div className="mb-6">
+                <h4 className="font-semibold text-bakery-1100 mb-3 font-body">Категории товаров</h4>
+
+                {availableCategories.length === 0 ? (
+                    // Сообщение когда категорий нет или загружаются
+                    <div className="text-center py-4">
+                        <div className="text-3xl mb-2">📁</div>
+                        <p className="text-bakery-1050 text-sm font-body">
+                            Категории загружаются...
+                        </p>
+                    </div>
+                ) : (
+                    // Список реальных категорий из API
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                        {availableCategories.map((category) => (
+                            <label
+                                key={category.id}
+                                className="flex items-center justify-between group cursor-pointer hover:bg-bakery-50 px-2 py-1 rounded transition-colors"
+                            >
+                                <div className="flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        checked={localSelectedCategories.includes(category.name)}
+                                        onChange={() => toggleCategory(category.name)}
+                                        className="w-4 h-4 text-bakery-500 border-bakery-300 rounded focus:ring-bakery-400"
+                                    />
+                                    <span className="ml-2 text-bakery-1050 text-sm group-hover:text-bakery-1100 transition-colors font-body">
+                                        {category.name}
+                                    </span>
+                                </div>
+                                <span className="text-bakery-400 text-xs bg-bakery-50 px-2 py-1 rounded-full">
+                                    {category.productCount}
                                 </span>
-                            </div>
-                            <span className="text-bakery-400 text-xs bg-bakery-50 px-2 py-1 rounded-full 2xl:text-sm 2xl:px-3 2xl:py-1.5">
-                                {category.count}
-                            </span>
-                        </label>
-                    ))}
-                </div>
+                            </label>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Диапазон цен */}
-            <div className="mb-6 2xl:mb-8">
-                <h4 className="font-semibold text-bakery-1100 mb-3 font-body 2xl:text-lg 2xl:mb-4">Диапазон цен</h4>
-                <div className="space-y-4 2xl:space-y-5">
-                    <div className="flex justify-between text-bakery-1050 text-sm 2xl:text-base">
+            <div className="mb-6">
+                <h4 className="font-semibold text-bakery-1100 mb-3 font-body">Диапазон цен</h4>
+                <div className="space-y-4">
+                    <div className="flex justify-between text-bakery-1050 text-sm">
                         <span>0₽</span>
                         <span>5000₽</span>
                     </div>
@@ -126,18 +146,18 @@ const FilterSidebar = ({
                         max="5000"
                         value={localPriceRange[1]}
                         onChange={(e) => handlePriceChange(e.target.value)}
-                        className="w-full h-2 bg-bakery-200 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-bakery-500 2xl:h-3 2xl:[&::-webkit-slider-thumb]:h-5 2xl:[&::-webkit-slider-thumb]:w-5"
+                        className="w-full h-2 bg-bakery-200 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-bakery-500"
                     />
-                    <div className="text-center text-bakery-500 font-semibold 2xl:text-lg">
+                    <div className="text-center text-bakery-500 font-semibold">
                         до {localPriceRange[1]}₽
                     </div>
                 </div>
             </div>
 
             {/* Особенности питания */}
-            <div className="mb-6 2xl:mb-8">
-                <h4 className="font-semibold text-bakery-1100 mb-3 font-body 2xl:text-lg 2xl:mb-4">Особенности питания</h4>
-                <div className="space-y-2 2xl:space-y-3">
+            <div className="mb-6">
+                <h4 className="font-semibold text-bakery-1100 mb-3 font-body">Особенности питания</h4>
+                <div className="space-y-2">
                     {dietaryFeatures.map((feature) => (
                         <label key={feature.name} className="flex items-center justify-between group cursor-pointer">
                             <div className="flex items-center">
@@ -145,13 +165,13 @@ const FilterSidebar = ({
                                     type="checkbox"
                                     checked={localSelectedDietary.includes(feature.name)}
                                     onChange={() => toggleDietary(feature.name)}
-                                    className="w-4 h-4 text-bakery-500 border-bakery-300 rounded focus:ring-bakery-400 2xl:w-5 2xl:h-5"
+                                    className="w-4 h-4 text-bakery-500 border-bakery-300 rounded focus:ring-bakery-400"
                                 />
-                                <span className="ml-2 text-bakery-1050 text-sm group-hover:text-bakery-1100 transition-colors font-body 2xl:text-base 2xl:ml-3">
+                                <span className="ml-2 text-bakery-1050 text-sm group-hover:text-bakery-1100 transition-colors font-body">
                                     {feature.name}
                                 </span>
                             </div>
-                            <span className="text-bakery-400 text-xs bg-bakery-50 px-2 py-1 rounded-full 2xl:text-sm 2xl:px-3 2xl:py-1.5">
+                            <span className="text-bakery-400 text-xs bg-bakery-50 px-2 py-1 rounded-full">
                                 {feature.count}
                             </span>
                         </label>
@@ -159,9 +179,45 @@ const FilterSidebar = ({
                 </div>
             </div>
 
+            {/* Индикатор активных фильтров */}
+            {(localSelectedCategories.length > 0 || localSelectedDietary.length > 0 || localPriceRange[1] < 5000) && (
+                <div className="mb-4 p-3 bg-bakery-50 rounded-lg border border-bakery-200">
+                    <p className="text-bakery-1100 text-sm font-body font-semibold mb-2">
+                        Активные фильтры:
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                        {localSelectedCategories.map(category => (
+                            <span
+                                key={category}
+                                className="bg-bakery-500 text-white text-xs px-2 py-1 rounded-full font-body"
+                            >
+                                {category}
+                            </span>
+                        ))}
+                        {localSelectedDietary.map(dietary => (
+                            <span
+                                key={dietary}
+                                className="bg-bakery-300 text-bakery-1100 text-xs px-2 py-1 rounded-full font-body"
+                            >
+                                {dietary}
+                            </span>
+                        ))}
+                        {localPriceRange[1] < 5000 && (
+                            <span className="bg-bakery-400 text-white text-xs px-2 py-1 rounded-full font-body">
+                                до {localPriceRange[1]}₽
+                            </span>
+                        )}
+                    </div>
+                </div>
+            )}
+
             {/* Кнопка применения фильтров */}
-            <Button className="w-full 2xl:py-4 2xl:text-lg" onClick={applyFilters}>
-                Применить фильтры
+            <Button
+                className="w-full"
+                onClick={applyFilters}
+                disabled={availableCategories.length === 0}
+            >
+                {availableCategories.length === 0 ? 'Загрузка...' : 'Применить фильтры'}
             </Button>
         </div>
     )

@@ -116,7 +116,7 @@ const Header = () => {
                                 <span className="w-8 h-8 bg-bakery-500 text-white rounded-full flex items-center justify-center text-sm">
                                     {userName ? userName.charAt(0).toUpperCase() : '👤'}
                                 </span>
-                                <span className="hidden sm:block nav-link relative">
+                                <span className="hidden sm:block relative">
                                     {userName}
                                 </span>
                             </Link>
